@@ -57,6 +57,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        "green-primary": "hsl(var(--green-primary))",
+        "green-dark": "hsl(var(--green-dark))",
+        "orange-primary": "hsl(var(--orange-primary))",
+        "purple-light": "hsl(var(--purple-light))",
+        "purple-icon": "hsl(var(--purple-icon))",
+        "whatsapp-green": "hsl(var(--whatsapp-green))",
       },
       borderRadius: {
         lg: "var(--radius)",
