@@ -6,13 +6,13 @@ const ActionButtons = () => {
   ];
 
   return (
-    <div className="flex gap-3 px-4 -mt-8">
+    <div className="flex gap-2 px-4 -mt-6 relative z-10">
       {actions.map((action) => (
         <button
           key={action.label}
-          className="flex-1 bg-card rounded-xl py-5 px-2 text-sm shadow-sm border border-border hover:bg-muted transition-colors"
+          className="flex-1 bg-card rounded-xl py-4 px-2 text-sm shadow-md border border-border/50 hover:bg-muted transition-colors"
         >
-          <span className={action.bold ? "font-bold text-foreground" : "font-medium text-foreground"}>
+          <span className={action.bold ? "font-semibold text-foreground" : "font-medium text-foreground"}>
             {action.label}
           </span>
         </button>
