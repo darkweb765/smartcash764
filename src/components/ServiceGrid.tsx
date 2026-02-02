@@ -5,7 +5,6 @@ import {
   Zap, 
   Gift, 
   Tv, 
-  FileText, 
   CreditCard,
   Wallet,
   Smartphone
@@ -21,7 +20,7 @@ interface ServiceItem {
 const ServiceGrid = () => {
   const services: ServiceItem[] = [
     {
-      icon: <ArrowLeftRight className="w-6 h-6" />,
+      icon: <ArrowLeftRight className="w-6 h-6" strokeWidth={2.5} />,
       label: "Data Bundle",
       bgColor: "bg-card",
       iconColor: "text-foreground",
@@ -29,7 +28,7 @@ const ServiceGrid = () => {
     {
       icon: (
         <div className="relative">
-          <Phone className="w-5 h-5" />
+          <Phone className="w-5 h-5" strokeWidth={2.5} />
           <span className="absolute -top-1 -right-2 text-[8px] font-bold">₦</span>
         </div>
       ),
@@ -38,25 +37,25 @@ const ServiceGrid = () => {
       iconColor: "text-foreground",
     },
     {
-      icon: <Send className="w-6 h-6" />,
+      icon: <Send className="w-6 h-6" strokeWidth={2.5} />,
       label: "Airtime",
       bgColor: "bg-purple-light",
       iconColor: "text-purple-icon",
     },
     {
-      icon: <Zap className="w-6 h-6" />,
+      icon: <Zap className="w-6 h-6 fill-current" strokeWidth={0} />,
       label: "Electricity",
       bgColor: "bg-card",
       iconColor: "text-orange-primary",
     },
     {
-      icon: <Gift className="w-6 h-6" />,
+      icon: <Gift className="w-6 h-6" strokeWidth={2.5} />,
       label: "Refer & Earn",
       bgColor: "bg-card border border-destructive",
       iconColor: "text-destructive",
     },
     {
-      icon: <Tv className="w-6 h-6" />,
+      icon: <Tv className="w-6 h-6" strokeWidth={2.5} />,
       label: "Cable",
       bgColor: "bg-card",
       iconColor: "text-orange-primary",
@@ -64,7 +63,7 @@ const ServiceGrid = () => {
     {
       icon: (
         <div className="w-6 h-6 rounded-full border-2 border-orange-primary flex items-center justify-center">
-          <span className="text-[8px] font-bold text-orange-primary">PASS</span>
+          <span className="text-[6px] font-bold text-orange-primary">PASS</span>
         </div>
       ),
       label: "Exam",
@@ -72,19 +71,19 @@ const ServiceGrid = () => {
       iconColor: "text-foreground",
     },
     {
-      icon: <CreditCard className="w-6 h-6" />,
+      icon: <CreditCard className="w-6 h-6" strokeWidth={2.5} />,
       label: "Data Card",
       bgColor: "bg-card",
       iconColor: "text-orange-primary",
     },
     {
-      icon: <Wallet className="w-6 h-6" />,
+      icon: <Wallet className="w-6 h-6" strokeWidth={2.5} />,
       label: "Recharge Card",
       bgColor: "bg-card",
       iconColor: "text-orange-primary",
     },
     {
-      icon: <Smartphone className="w-6 h-6" />,
+      icon: <Smartphone className="w-6 h-6" strokeWidth={2.5} />,
       label: "Virtual Card",
       bgColor: "bg-card",
       iconColor: "text-orange-primary",
