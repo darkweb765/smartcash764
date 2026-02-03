@@ -1,11 +1,39 @@
 import { Gift } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const GiftIcon = () => {
+interface GiftIconProps {
+  isClaimed: boolean;
+  isAnimating: boolean;
+  onClaim: () => void;
+}
+
+const GiftIcon = ({ isClaimed, isAnimating, onClaim }: GiftIconProps) => {
+  const isClickable = !isClaimed && !isAnimating;
+
   return (
     <div className="flex justify-center my-6">
-      <div className="w-20 h-20 rounded-full bg-purple-light flex items-center justify-center shadow-md">
-        <Gift className="w-10 h-10 text-purple-icon" strokeWidth={1.5} />
-      </div>
+      <button
+        onClick={isClickable ? onClaim : undefined}
+        disabled={!isClickable}
+        className={cn(
+          "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300",
+          isClickable && "cursor-pointer hover:scale-110 active:scale-95",
+          !isClickable && "cursor-default",
+          isClaimed 
+            ? "bg-muted shadow-md" 
+            : "bg-purple-light shadow-lg shadow-purple-icon/40",
+          isAnimating && "animate-pulse"
+        )}
+        aria-label={isClaimed ? "Gift already claimed" : "Claim your gift"}
+      >
+        <Gift 
+          className={cn(
+            "w-10 h-10 transition-colors duration-300",
+            isClaimed ? "text-muted-foreground" : "text-purple-icon"
+          )} 
+          strokeWidth={1.5} 
+        />
+      </button>
     </div>
   );
 };
