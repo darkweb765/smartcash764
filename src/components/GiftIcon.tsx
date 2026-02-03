@@ -8,7 +8,8 @@ interface GiftIconProps {
 }
 
 const GiftIcon = ({ isClaimed, isAnimating, onClaim }: GiftIconProps) => {
-  const isClickable = !isClaimed && !isAnimating;
+  // Clickable when not animating (can click when claimed to show popup)
+  const isClickable = !isAnimating;
 
   return (
     <div className="flex justify-center my-6">
