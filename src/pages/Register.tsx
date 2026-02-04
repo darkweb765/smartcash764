@@ -60,9 +60,9 @@ const Register = () => {
     } else {
       toast({
         title: "Success",
-        description: "Account created! Please check your email to verify your account.",
+        description: "Account created successfully!",
       });
-      navigate("/login");
+      navigate("/dashboard");
     }
   };
 
