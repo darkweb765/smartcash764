@@ -1,15 +1,18 @@
 import { Home, CreditCard, User } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface NavItem {
   icon: React.ReactNode;
   activeIcon: React.ReactNode;
   label: string;
   id: string;
+  path?: string;
 }
 
 const BottomNav = () => {
   const [activeTab, setActiveTab] = useState("home");
+  const navigate = useNavigate();
 
   const navItems: NavItem[] = [
     {
@@ -17,6 +20,7 @@ const BottomNav = () => {
       icon: <Home className="w-6 h-6" strokeWidth={1.5} />,
       activeIcon: <Home className="w-6 h-6 fill-current" strokeWidth={1.5} />,
       label: "Home",
+      path: "/dashboard",
     },
     {
       id: "wallet",
@@ -29,8 +33,16 @@ const BottomNav = () => {
       icon: <User className="w-6 h-6" strokeWidth={1.5} />,
       activeIcon: <User className="w-6 h-6" strokeWidth={1.5} />,
       label: "Profile",
+      path: "/profile",
     },
   ];
+
+  const handleNavClick = (item: NavItem) => {
+    setActiveTab(item.id);
+    if (item.path) {
+      navigate(item.path);
+    }
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 max-w-md mx-auto">
@@ -40,9 +52,9 @@ const BottomNav = () => {
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => handleNavClick(item)}
               className={`flex flex-col items-center gap-1 px-8 py-1 transition-colors ${
-                isActive ? "text-green-primary" : "text-muted-foreground"
+                isActive ? "text-primary" : "text-muted-foreground"
               }`}
             >
               {isActive ? item.activeIcon : item.icon}
