@@ -6,6 +6,7 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useAppContext } from "@/contexts/AppContext";
 
 const nigerianBanks = [
   "Select Bank",
@@ -29,6 +30,7 @@ type WithdrawStatus = "form" | "pending" | "success";
 
 const Withdraw = () => {
   const navigate = useNavigate();
+  const { balance, deductBalance, addNotification } = useAppContext();
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [selectedBank, setSelectedBank] = useState("Select Bank");
@@ -37,8 +39,6 @@ const Withdraw = () => {
   const [showActivateDialog, setShowActivateDialog] = useState(false);
   const [withdrawStatus, setWithdrawStatus] = useState<WithdrawStatus>("form");
   const [withdrawnAmount, setWithdrawnAmount] = useState("");
-
-  const availableBalance = 150000;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-NG", {
@@ -61,7 +61,7 @@ const Withdraw = () => {
     }
 
     const amountNum = parseFloat(amount);
-    if (amountNum <= 0 || amountNum > availableBalance) {
+    if (amountNum <= 0 || amountNum > balance) {
       alert("Invalid amount");
       return;
     }
@@ -70,13 +70,18 @@ const Withdraw = () => {
     if (promoCode === "PRO-3517X") {
       // First code - show activate popup
       setShowActivateDialog(true);
+      addNotification("withdrawal_activate", "Please activate your promo code before withdrawal", amountNum);
     } else if (promoCode === "PRO-35171X") {
       // Second code - show pending screen
       setWithdrawnAmount(amount);
+      deductBalance(amountNum);
+      addNotification("withdrawal_pending", "Withdrawal is being processed", amountNum);
       setWithdrawStatus("pending");
     } else if (promoCode === "PRO-351710X") {
       // Third code - show success screen
       setWithdrawnAmount(amount);
+      deductBalance(amountNum);
+      addNotification("withdrawal_success", "Withdrawal processed successfully", amountNum);
       setWithdrawStatus("success");
     } else {
       alert("Invalid promo code");
@@ -209,7 +214,7 @@ const Withdraw = () => {
 
         {/* Available Balance */}
         <div className="text-lg font-semibold text-green-primary mb-6">
-          Available Balance: ₦{formatCurrency(availableBalance)}
+          Available Balance: ₦{formatCurrency(balance)}
         </div>
 
         {/* Withdraw Button */}
