@@ -6,7 +6,7 @@ const ActionButtons = () => {
   const actions = [
     { label: "Join group", bold: false, path: null },
     { label: "Withdraw", bold: true, path: "/withdraw" },
-    { label: "Transaction", bold: true, path: null },
+    { label: "Transaction", bold: true, path: "/transactions" },
   ];
 
   const handleClick = (path: string | null) => {

@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import Withdraw from "./pages/Withdraw";
 import Notifications from "./pages/Notifications";
+import Transactions from "./pages/Transactions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/withdraw" element={<Withdraw />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/transactions" element={<Transactions />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
