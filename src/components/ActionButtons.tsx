@@ -4,7 +4,7 @@ const ActionButtons = () => {
   const navigate = useNavigate();
   
   const actions = [
-    { label: "Join group", bold: false, path: null },
+    { label: "Promo", bold: true, path: "/promo" },
     { label: "Withdraw", bold: true, path: "/withdraw" },
     { label: "Transaction", bold: true, path: "/transactions" },
   ];
