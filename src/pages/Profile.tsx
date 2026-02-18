@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, User, HelpCircle, Info, DollarSign, LogOut, ChevronRight } from "lucide-react";
+import { ArrowLeft, User, Settings, ShoppingCart, Info, MessageCircle, Shield, HelpCircle, LogOut, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import BottomNav from "@/components/BottomNav";
 
 interface ProfileData {
   username: string;
@@ -13,6 +14,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +25,8 @@ const Profile = () => {
         navigate("/login");
         return;
       }
+
+      setEmail(user.email || "");
 
       const { data, error } = await supabase
         .from("profiles")
@@ -44,49 +48,20 @@ const Profile = () => {
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to logout",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to logout", variant: "destructive" });
     } else {
-      toast({
-        title: "Success",
-        description: "Logged out successfully",
-      });
+      toast({ title: "Success", description: "Logged out successfully" });
       navigate("/welcome");
     }
   };
 
   const menuItems = [
-    {
-      icon: User,
-      title: "Profile Information",
-      subtitle: "View and edit your profile details",
-      color: "bg-purple-100",
-      iconColor: "text-purple-600",
-    },
-    {
-      icon: HelpCircle,
-      title: "Help & Support",
-      subtitle: "Get help with using SmartPay",
-      color: "bg-cyan-100",
-      iconColor: "text-cyan-600",
-    },
-    {
-      icon: Info,
-      title: "About",
-      subtitle: "Learn more about SmartPay",
-      color: "bg-blue-100",
-      iconColor: "text-blue-600",
-    },
-    {
-      icon: DollarSign,
-      title: "Refer & Earn",
-      subtitle: "Invite friends and earn ₦5,000 per referral",
-      color: "bg-yellow-100",
-      iconColor: "text-yellow-600",
-    },
+    { icon: Settings, label: "Account Settings", onClick: () => {} },
+    { icon: ShoppingCart, label: "Buy Token ID", onClick: () => window.open("https://wa.me/", "_blank") },
+    { icon: Info, label: "About SmartPay", onClick: () => {} },
+    { icon: MessageCircle, label: "Join WhatsApp Group", onClick: () => window.open("https://wa.me/", "_blank") },
+    { icon: Shield, label: "Security", onClick: () => {} },
+    { icon: HelpCircle, label: "Help & Support", onClick: () => {} },
   ];
 
   if (loading) {
@@ -98,60 +73,61 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto flex flex-col">
-      {/* Header */}
-      <div className="flex items-center gap-4 px-4 py-4 border-b border-border">
-        <button onClick={() => navigate("/dashboard")} className="p-1">
-          <ArrowLeft className="w-6 h-6 text-foreground" />
+    <div className="min-h-screen bg-muted max-w-md mx-auto flex flex-col pb-20">
+      {/* Green Header */}
+      <div className="bg-green-primary text-white p-4 flex items-center gap-3">
+        <button onClick={() => navigate("/dashboard")}>
+          <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-xl font-bold text-foreground">Profile</h1>
+        <span className="text-lg font-semibold">Profile</span>
       </div>
 
-      {/* Avatar Section */}
-      <div className="flex flex-col items-center py-8">
-        <div className="w-28 h-28 rounded-full bg-purple-100 border-4 border-purple-200 flex items-center justify-center mb-4">
-          {profile?.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt="Profile"
-              className="w-full h-full rounded-full object-cover"
-            />
-          ) : (
-            <User className="w-14 h-14 text-purple-400" strokeWidth={1.5} />
-          )}
+      {/* Profile Card */}
+      <div className="mx-4 mt-4 bg-card rounded-2xl p-6 flex flex-col items-center border border-border">
+        <div className="relative mb-3">
+          <div className="w-24 h-24 rounded-full bg-green-100 border-4 border-green-200 flex items-center justify-center">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Profile" className="w-full h-full rounded-full object-cover" />
+            ) : (
+              <User className="w-12 h-12 text-green-primary" strokeWidth={1.5} />
+            )}
+          </div>
+          <div className="absolute bottom-0 right-0 w-8 h-8 bg-green-primary rounded-full flex items-center justify-center border-2 border-white">
+            <Camera className="w-4 h-4 text-white" />
+          </div>
         </div>
-        <p className="text-muted-foreground text-sm">Tap to change profile picture</p>
+        <h2 className="text-xl font-bold text-foreground uppercase">{profile?.username || "User"}</h2>
+        <p className="text-sm text-muted-foreground">{email}</p>
       </div>
 
       {/* Menu Items */}
-      <div className="flex-1 px-4 space-y-3">
+      <div className="mx-4 mt-4 bg-card rounded-2xl border border-border overflow-hidden">
         {menuItems.map((item, index) => (
           <button
             key={index}
-            className="w-full flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:bg-accent/50 transition-colors"
+            onClick={item.onClick}
+            className={`w-full flex items-center gap-4 px-5 py-4 hover:bg-accent/50 transition-colors ${
+              index < menuItems.length - 1 ? "border-b border-border" : ""
+            }`}
           >
-            <div className={`w-12 h-12 rounded-full ${item.color} flex items-center justify-center`}>
-              <item.icon className={`w-6 h-6 ${item.iconColor}`} />
-            </div>
-            <div className="flex-1 text-left">
-              <h3 className="font-semibold text-foreground">{item.title}</h3>
-              <p className="text-sm text-muted-foreground">{item.subtitle}</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            <item.icon className="w-6 h-6 text-green-primary" strokeWidth={1.5} />
+            <span className="font-medium text-foreground">{item.label}</span>
           </button>
         ))}
       </div>
 
       {/* Logout Button */}
-      <div className="px-4 py-6">
+      <div className="mx-4 mt-6">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 py-4 border-2 border-destructive rounded-xl text-destructive font-medium hover:bg-destructive/10 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-4 bg-destructive rounded-2xl text-white font-semibold text-lg hover:bg-destructive/90 transition-colors"
         >
           <LogOut className="w-5 h-5" />
-          Logout
+          Log Out
         </button>
       </div>
+
+      <BottomNav />
     </div>
   );
 };
