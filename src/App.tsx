@@ -13,6 +13,7 @@ import Withdraw from "./pages/Withdraw";
 import Notifications from "./pages/Notifications";
 import Transactions from "./pages/Transactions";
 import Promo from "./pages/Promo";
+import BuyPromo from "./pages/BuyPromo";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/promo" element={<Promo />} />
+            <Route path="/buy-promo" element={<BuyPromo />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
