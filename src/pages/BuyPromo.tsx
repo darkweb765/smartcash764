@@ -254,7 +254,7 @@ const BuyPromo = () => {
 
       {/* Important Notice Dialog */}
       <Dialog open={pageState === "notice"} onOpenChange={() => {}}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden bg-muted">
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden bg-background">
           <h2 className="text-xl font-bold text-red-500 mb-3">Important Notice</h2>
           <p className="font-bold text-foreground mb-3">
             Please do NOT make your payment with Opay.
