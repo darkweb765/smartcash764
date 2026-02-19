@@ -137,7 +137,7 @@ const BuyPromo = () => {
               <div className="w-8 h-8 rounded-full border-3 border-yellow-400" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-foreground">NGN 7,000</p>
+              <p className="text-2xl font-bold text-foreground">NGN 7,500</p>
               <p className="text-sm text-muted-foreground">{email}</p>
             </div>
           </div>
@@ -151,8 +151,8 @@ const BuyPromo = () => {
                 <span className="text-sm text-muted-foreground">Amount</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-foreground">NGN 7,000</span>
-                <button onClick={() => handleCopy("7000", "amount")} className="px-4 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground">
+                <span className="text-lg font-bold text-foreground">NGN 7,500</span>
+                <button onClick={() => handleCopy("7500", "amount")} className="px-4 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground">
                   {copiedField === "amount" ? <Check className="w-4 h-4 text-green-primary" /> : "Copy"}
                 </button>
               </div>
@@ -165,8 +165,8 @@ const BuyPromo = () => {
                 <span className="text-sm text-muted-foreground">Account Number</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-foreground">1002959971</span>
-                <button onClick={() => handleCopy("1002959971", "account")} className="px-4 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground">
+                <span className="text-lg font-bold text-foreground">5227367627</span>
+                <button onClick={() => handleCopy("5227367627", "account")} className="px-4 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground">
                   {copiedField === "account" ? <Check className="w-4 h-4 text-green-primary" /> : "Copy"}
                 </button>
               </div>
@@ -178,7 +178,7 @@ const BuyPromo = () => {
                 <span className="text-xs bg-green-primary/20 text-green-primary px-1.5 py-0.5 rounded">🏦</span>
                 <span className="text-sm text-muted-foreground">Bank Name</span>
               </div>
-              <span className="text-lg font-bold text-foreground">Sparkle</span>
+              <span className="text-lg font-bold text-foreground">Moniepoint MFB</span>
             </div>
 
             {/* Account Name */}
@@ -187,7 +187,7 @@ const BuyPromo = () => {
                 <span className="text-xs bg-green-primary/20 text-green-primary px-1.5 py-0.5 rounded">👤</span>
                 <span className="text-sm text-muted-foreground">Account Name</span>
               </div>
-              <span className="text-lg font-bold text-foreground">NWARA CHIMA</span>
+              <span className="text-lg font-bold text-foreground">Holuebube Jude Olimba</span>
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -219,7 +219,7 @@ const BuyPromo = () => {
       <div className="p-5 flex-1">
         <label className="text-base font-semibold text-foreground">Amount</label>
         <div className="w-full px-4 py-3.5 mb-5 mt-2 rounded-lg bg-muted text-foreground text-[15px]">
-          ₦7,000
+          ₦7,500
         </div>
 
         <label className="text-base font-semibold text-foreground">Full Name</label>
