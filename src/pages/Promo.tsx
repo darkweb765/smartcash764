@@ -17,7 +17,7 @@ const Promo = () => {
       label: "Buy Promo Code",
       color: "bg-yellow-100",
       iconColor: "text-yellow-600",
-      onClick: () => window.open("https://wa.me/", "_blank"),
+      onClick: () => navigate("/buy-promo"),
     },
     {
       icon: Info,
