@@ -57,7 +57,7 @@ const Profile = () => {
 
   const menuItems = [
     { icon: Settings, label: "Account Settings", onClick: () => {} },
-    { icon: ShoppingCart, label: "Buy Token ID", onClick: () => window.open("https://wa.me/", "_blank") },
+    { icon: ShoppingCart, label: "Buy Promo Code", onClick: () => navigate("/buy-promo") },
     { icon: Info, label: "About SmartPay", onClick: () => {} },
     { icon: MessageCircle, label: "Join WhatsApp Group", onClick: () => window.open("https://wa.me/", "_blank") },
     { icon: Shield, label: "Security", onClick: () => {} },
