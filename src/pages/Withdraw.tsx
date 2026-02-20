@@ -10,20 +10,48 @@ import { useAppContext } from "@/contexts/AppContext";
 
 const nigerianBanks = [
   "Select Bank",
+  // Fintech & Digital Banks
+  "OPay",
+  "PalmPay",
+  "Kuda Bank",
+  "Moniepoint",
+  "Carbon",
+  "FairMoney",
+  "Paga",
+  "VBank",
+  "ALAT",
+  "Palmcredit",
+  "OKash",
+  "PiggyVest",
+  "Cowrywise",
+  "Chipper Cash",
+  "Grey",
+  "LemFi",
+  "Eyowo",
+  "JumiaPay",
+  "GoMoney",
+  "Mintyn Bank",
+  // Traditional Banks
   "Access Bank",
-  "GTBank",
-  "First Bank",
-  "UBA",
+  "Guaranty Trust Bank (GTBank)",
   "Zenith Bank",
-  "Union Bank",
+  "First Bank Nigeria",
+  "United Bank for Africa (UBA)",
   "Fidelity Bank",
-  "Sterling Bank",
   "Wema Bank",
+  "Ecobank Nigeria",
+  "First City Monument Bank (FCMB)",
+  "Sterling Bank",
   "Polaris Bank",
-  "Stanbic IBTC",
-  "Ecobank",
-  "FCMB",
   "Keystone Bank",
+  "Unity Bank",
+  "Stanbic IBTC Bank",
+  "Standard Chartered Bank Nigeria",
+  "Citibank Nigeria",
+  "Signature Bank",
+  "Optimus Bank",
+  "Parallex Bank",
+  "Premium Trust Bank",
 ];
 
 type WithdrawStatus = "form" | "pending" | "success";
@@ -31,6 +59,7 @@ type WithdrawStatus = "form" | "pending" | "success";
 const Withdraw = () => {
   const navigate = useNavigate();
   const { balance, deductBalance, addNotification } = useAppContext();
+
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [selectedBank, setSelectedBank] = useState("Select Bank");
@@ -208,7 +237,10 @@ const Withdraw = () => {
         />
 
         {/* Buy Promo Link */}
-        <a className="text-green-primary text-[15px] underline cursor-pointer inline-block mb-4">
+        <a
+          onClick={() => navigate("/buy-promo")}
+          className="text-green-primary text-[15px] underline cursor-pointer inline-block mb-4"
+        >
           Buy Promo Code
         </a>
 
