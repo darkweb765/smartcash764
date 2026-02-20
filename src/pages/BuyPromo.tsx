@@ -191,7 +191,7 @@ const BuyPromo = () => {
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Transfer the exact amount to the account above. Your Coupon Code will be generated automatically after payment confirmation. Use your registered name as the transfer description for faster processing.
+              Transfer the exact amount to the account above. Your Promo Code will be generated automatically after payment confirmation. Use your registered name as the transfer description for faster processing.
             </p>
 
             <Button
@@ -213,7 +213,7 @@ const BuyPromo = () => {
         <button onClick={() => navigate(-1)}>
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <span className="text-xl font-semibold">Buy Coupon Code</span>
+        <span className="text-xl font-semibold">Buy Promo Code</span>
       </div>
 
       <div className="p-5 flex-1">
@@ -249,7 +249,7 @@ const BuyPromo = () => {
       </div>
 
       <p className="text-green-primary text-sm text-center px-6 pb-6">
-        Your coupon code will be sent to your email once your payment has confirmed.
+        Your promo code will be sent to your email once your payment has confirmed.
       </p>
 
       {/* Important Notice Dialog */}
