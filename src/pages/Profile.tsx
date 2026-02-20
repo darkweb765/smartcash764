@@ -61,7 +61,7 @@ const Profile = () => {
     { icon: Info, label: "About SmartPay", onClick: () => {} },
     { icon: MessageCircle, label: "Join WhatsApp Group", onClick: () => window.open("https://wa.me/", "_blank") },
     { icon: Shield, label: "Security", onClick: () => {} },
-    { icon: HelpCircle, label: "Help & Support", onClick: () => {} },
+    { icon: HelpCircle, label: "Help & Support", onClick: () => window.open("https://wa.me/2349155306297?text=Hello%20I%20contacted%20from%20smart%20pay", "_blank") },
   ];
 
   if (loading) {
