@@ -1,22 +1,53 @@
-import { Bell } from "lucide-react";
+import { Bell, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/contexts/AppContext";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Header = () => {
   const navigate = useNavigate();
   const { unreadCount } = useAppContext();
+  const [username, setUsername] = useState("User");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("username, avatar_url")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (data) {
+        setUsername(data.username || "User");
+        setAvatarUrl(data.avatar_url);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   return (
     <div className="flex items-center justify-between px-4 py-3">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
-          <img
-            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
-            alt="User avatar"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <span className="text-lg font-semibold text-foreground">Hi, User</span>
+        <button
+          onClick={() => navigate("/profile")}
+          className="w-12 h-12 rounded-full overflow-hidden bg-muted border-2 border-green-primary flex items-center justify-center"
+        >
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="User avatar"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User className="w-6 h-6 text-green-primary" strokeWidth={1.5} />
+          )}
+        </button>
+        <span className="text-lg font-semibold text-foreground">Hi, {username}</span>
       </div>
       <button 
         onClick={() => navigate("/notifications")}
