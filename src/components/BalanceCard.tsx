@@ -9,7 +9,7 @@ const BalanceCard = ({ balance }: BalanceCardProps) => {
   }).format(balance);
 
   return (
-    <div className="mx-4 rounded-2xl bg-green-primary p-5 pt-8 pb-12 flex flex-col items-center justify-center">
+    <div className="mx-4 rounded-2xl bg-green-primary p-5 pb-16 flex flex-col items-start">
       <p className="text-primary-foreground/90 text-sm mb-1">Available Balance</p>
       <p className="text-primary-foreground text-4xl font-bold">₦{formattedBalance}</p>
     </div>
