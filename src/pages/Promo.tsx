@@ -7,10 +7,10 @@ const Promo = () => {
   const menuItems = [
     {
       icon: MessageCircle,
-      label: "Join WhatsApp Group",
+      label: "Join WhatsApp Channel",
       color: "bg-green-100",
       iconColor: "text-green-600",
-      onClick: () => window.open("https://wa.me/", "_blank"),
+      onClick: () => window.open("https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40", "_blank"),
     },
     {
       icon: ShoppingCart,
@@ -31,7 +31,7 @@ const Promo = () => {
       label: "Contact Support",
       color: "bg-purple-100",
       iconColor: "text-purple-600",
-      onClick: () => window.open("https://wa.me/2349155306297?text=Hello%20I%20contacted%20from%20smart%20pay", "_blank"),
+      onClick: () => window.open("https://wa.me/2349155306297?text=Hello%2C%20I%20contacted%20you%20from%20SmartPay.%20I%20need%20help.", "_blank"),
     },
   ];
 
@@ -48,9 +48,9 @@ const Promo = () => {
       {/* WhatsApp Info */}
       <div className="m-4 p-5 bg-muted rounded-xl border-l-4 border-green-primary text-center">
         <MessageCircle className="w-12 h-12 text-green-primary mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-foreground">Join Our WhatsApp Group</h2>
+        <h2 className="text-lg font-bold text-foreground">Join Our WhatsApp Channel</h2>
         <p className="text-sm text-muted-foreground mt-2">
-          Join our WhatsApp group for more information about SmartPay
+          Join our WhatsApp channel for updates and announcements about SmartPay
         </p>
       </div>
 
