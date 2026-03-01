@@ -4,6 +4,22 @@ import { ArrowLeft, User, Settings, ShoppingCart, Info, MessageCircle, Shield, H
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ProfileData {
   username: string;
@@ -16,6 +32,8 @@ const Profile = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -58,10 +76,10 @@ const Profile = () => {
   const menuItems = [
     { icon: Settings, label: "Account Settings", onClick: () => {} },
     { icon: ShoppingCart, label: "Buy Promo Code", onClick: () => navigate("/buy-promo") },
-    { icon: Info, label: "About SmartPay", onClick: () => {} },
-    { icon: MessageCircle, label: "Join WhatsApp Group", onClick: () => window.open("https://wa.me/", "_blank") },
+    { icon: Info, label: "About SmartPay", onClick: () => setShowAbout(true) },
+    { icon: MessageCircle, label: "Join WhatsApp Channel", onClick: () => window.open("https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40", "_blank") },
     { icon: Shield, label: "Security", onClick: () => {} },
-    { icon: HelpCircle, label: "Help & Support", onClick: () => window.open("https://wa.me/2349155306297?text=Hello%20I%20contacted%20from%20smart%20pay", "_blank") },
+    { icon: HelpCircle, label: "Help & Support", onClick: () => window.open("https://wa.me/2349155306297?text=Hello%2C%20I%20contacted%20you%20from%20SmartPay.%20I%20need%20help.", "_blank") },
   ];
 
   if (loading) {
@@ -119,13 +137,67 @@ const Profile = () => {
       {/* Logout Button */}
       <div className="mx-4 mt-6">
         <button
-          onClick={handleLogout}
+          onClick={() => setShowLogoutConfirm(true)}
           className="w-full flex items-center justify-center gap-2 py-4 bg-destructive rounded-2xl text-white font-semibold text-lg hover:bg-destructive/90 transition-colors"
         >
           <LogOut className="w-5 h-5" />
           Log Out
         </button>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will need to enter your email and password to log back in.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+              Yes, Log Out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* About SmartPay Dialog */}
+      <Dialog open={showAbout} onOpenChange={setShowAbout}>
+        <DialogContent className="max-w-sm max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-green-primary">About SmartPay</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm text-foreground">
+            <p>
+              <strong>SmartPay</strong> is a rewarding platform that gives you the opportunity to earn daily rewards of <strong>₦150,000</strong> simply by claiming your daily gift on the dashboard.
+            </p>
+            <div>
+              <h3 className="font-semibold text-base mb-1">📌 How It Works</h3>
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li>Register and log in to your SmartPay account.</li>
+                <li>Claim your daily reward of ₦150,000 from the dashboard.</li>
+                <li>To withdraw your earnings, you must purchase a promo code directly from the app.</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-base mb-1">⚠️ Important Notice</h3>
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li>You <strong>cannot withdraw</strong> without a valid promo code.</li>
+                <li>Promo codes must be purchased <strong>only through the app</strong> — do not message any group admin to buy a code.</li>
+                <li>If you need help, contact our support team directly on WhatsApp. Do not contact any group admin for purchases.</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-base mb-1">💬 Need Help?</h3>
+              <p className="text-muted-foreground">
+                Tap <strong>"Help & Support"</strong> on the Profile page or contact us on WhatsApp for assistance.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
