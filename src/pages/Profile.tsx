@@ -84,8 +84,22 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div className="min-h-screen bg-muted max-w-md mx-auto flex flex-col pb-20">
+        <div className="bg-green-primary text-primary-foreground p-4 flex items-center gap-3">
+          <ArrowLeft className="w-6 h-6 opacity-60" />
+          <span className="text-lg font-semibold">Profile</span>
+        </div>
+        <div className="mx-4 mt-4 bg-card rounded-2xl p-6 border border-border animate-pulse">
+          <div className="w-24 h-24 rounded-full bg-muted mx-auto mb-4" />
+          <div className="h-5 bg-muted rounded w-1/2 mx-auto mb-2" />
+          <div className="h-4 bg-muted rounded w-2/3 mx-auto" />
+        </div>
+        <div className="mx-4 mt-4 bg-card rounded-2xl border border-border p-4 animate-pulse">
+          <div className="h-5 bg-muted rounded mb-4" />
+          <div className="h-5 bg-muted rounded mb-4" />
+          <div className="h-5 bg-muted rounded" />
+        </div>
+        <BottomNav />
       </div>
     );
   }
