@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Settings, ShoppingCart, Info, MessageCircle, Shield, HelpCircle, LogOut, Camera } from "lucide-react";
+import { ArrowLeft, User, Settings, ShoppingCart, Info, MessageCircle, Shield, HelpCircle, LogOut, Camera, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -20,6 +20,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 interface ProfileData {
   username: string;
@@ -34,6 +37,15 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showSecurity, setShowSecurity] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
+
+  // Security state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -73,12 +85,40 @@ const Profile = () => {
     }
   };
 
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({ title: "Error", description: "Please fill in both fields", variant: "destructive" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+      return;
+    }
+
+    setChangingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setChangingPassword(false);
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Success", description: "Password changed successfully" });
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowSecurity(false);
+    }
+  };
+
   const menuItems = [
-    { icon: Settings, label: "Account Settings", onClick: () => {} },
+    { icon: Settings, label: "Account Settings", onClick: () => setShowAccountSettings(true) },
     { icon: ShoppingCart, label: "Buy Promo Code", onClick: () => navigate("/buy-promo") },
     { icon: Info, label: "About SmartPay", onClick: () => setShowAbout(true) },
     { icon: MessageCircle, label: "Join WhatsApp Channel", onClick: () => window.open("https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40", "_blank") },
-    { icon: Shield, label: "Security", onClick: () => {} },
+    { icon: Shield, label: "Security", onClick: () => setShowSecurity(true) },
     { icon: HelpCircle, label: "Help & Support", onClick: () => window.open("https://wa.me/2349155306297?text=Hello%2C%20I%20contacted%20you%20from%20SmartPay.%20I%20need%20help.", "_blank") },
   ];
 
@@ -208,6 +248,77 @@ const Profile = () => {
               <p className="text-muted-foreground">
                 Tap <strong>"Help & Support"</strong> on the Profile page or contact us on WhatsApp for assistance.
               </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Security - Change Password Dialog */}
+      <Dialog open={showSecurity} onOpenChange={(open) => { setShowSecurity(open); if (!open) { setNewPassword(""); setConfirmPassword(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-green-primary">Change Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showNewPass ? "text" : "password"}
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowNewPass(!showNewPass)}>
+                  {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPass ? "text" : "password"}
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowConfirmPass(!showConfirmPass)}>
+                  {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <Button onClick={handleChangePassword} disabled={changingPassword} className="w-full bg-green-primary hover:bg-green-primary/90">
+              {changingPassword ? "Changing..." : "Change Password"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Account Settings Dialog */}
+      <Dialog open={showAccountSettings} onOpenChange={setShowAccountSettings}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-green-primary">Account Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Username</Label>
+              <div className="p-3 bg-muted rounded-lg text-foreground font-medium uppercase">{profile?.username || "User"}</div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Email</Label>
+              <div className="p-3 bg-muted rounded-lg text-foreground font-medium">{email}</div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Account Status</Label>
+              <div className="p-3 bg-muted rounded-lg text-green-primary font-medium">Active ✅</div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Member Since</Label>
+              <div className="p-3 bg-muted rounded-lg text-foreground font-medium">2026</div>
             </div>
           </div>
         </DialogContent>

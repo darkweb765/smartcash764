@@ -1,8 +1,16 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageCircle, ShoppingCart, Info, Headphones } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Promo = () => {
   const navigate = useNavigate();
+  const [showAbout, setShowAbout] = useState(false);
 
   const menuItems = [
     {
@@ -24,7 +32,7 @@ const Promo = () => {
       label: "About SmartPay",
       color: "bg-blue-100",
       iconColor: "text-blue-600",
-      onClick: () => {},
+      onClick: () => setShowAbout(true),
     },
     {
       icon: Headphones,
@@ -69,6 +77,42 @@ const Promo = () => {
           </button>
         ))}
       </div>
+
+      {/* About SmartPay Dialog */}
+      <Dialog open={showAbout} onOpenChange={setShowAbout}>
+        <DialogContent className="max-w-sm max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-green-primary">About SmartPay</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm text-foreground">
+            <p>
+              <strong>SmartPay</strong> is a rewarding platform that gives you the opportunity to earn daily rewards of <strong>₦150,000</strong> simply by claiming your daily gift on the dashboard.
+            </p>
+            <div>
+              <h3 className="font-semibold text-base mb-1">📌 How It Works</h3>
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li>Register and log in to your SmartPay account.</li>
+                <li>Claim your daily reward of ₦150,000 from the dashboard.</li>
+                <li>To withdraw your earnings, you must purchase a promo code directly from the app.</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-base mb-1">⚠️ Important Notice</h3>
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li>You <strong>cannot withdraw</strong> without a valid promo code.</li>
+                <li>Promo codes must be purchased <strong>only through the app</strong> — do not message any group admin to buy a code.</li>
+                <li>If you need help, contact our support team directly on WhatsApp.</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-base mb-1">💬 Need Help?</h3>
+              <p className="text-muted-foreground">
+                Tap <strong>"Contact Support"</strong> or reach us on WhatsApp for assistance.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
