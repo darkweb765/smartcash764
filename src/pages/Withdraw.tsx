@@ -66,6 +66,8 @@ const Withdraw = () => {
   const [amount, setAmount] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [showActivateDialog, setShowActivateDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showPromoDialog, setShowPromoDialog] = useState(false);
   const [withdrawStatus, setWithdrawStatus] = useState<WithdrawStatus>("form");
   const [withdrawnAmount, setWithdrawnAmount] = useState("");
 
@@ -77,21 +79,21 @@ const Withdraw = () => {
   };
 
   const handleWithdraw = () => {
-    // Validate account number is exactly 10 digits
-    if (accountNumber.length !== 10) {
-      alert("Account number must be exactly 10 digits");
+    // Validate all fields (except promo code)
+    if (!accountName || !accountNumber || selectedBank === "Select Bank" || !amount) {
+      setShowDetailsDialog(true);
       return;
     }
 
-    // Validate all fields
-    if (!accountName || !accountNumber || selectedBank === "Select Bank" || !amount || !promoCode) {
-      alert("Please fill in all fields");
+    // Validate account number is exactly 10 digits
+    if (accountNumber.length !== 10) {
+      setShowDetailsDialog(true);
       return;
     }
 
     const amountNum = parseFloat(amount);
     if (amountNum <= 0 || amountNum > balance) {
-      alert("Invalid amount");
+      setShowDetailsDialog(true);
       return;
     }
 
@@ -113,7 +115,8 @@ const Withdraw = () => {
       addNotification("withdrawal_success", "Withdrawal processed successfully", amountNum);
       setWithdrawStatus("success");
     } else {
-      alert("Invalid promo code");
+      // Invalid or empty promo code
+      setShowPromoDialog(true);
     }
   };
 
@@ -281,6 +284,47 @@ const Withdraw = () => {
                 Activate
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Missing Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
+          <div className="flex flex-col items-center gap-4">
+            <h2 className="text-lg font-semibold text-foreground">
+              Please enter your account details to withdraw
+            </h2>
+            <Button
+              onClick={() => setShowDetailsDialog(false)}
+              className="w-full py-5 bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-semibold rounded-xl"
+            >
+              Okay
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invalid Promo Code Dialog */}
+      <Dialog open={showPromoDialog} onOpenChange={setShowPromoDialog}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
+          <div className="flex flex-col items-center gap-4">
+            <h2 className="text-lg font-semibold text-foreground">
+              Incorrect promo code, please click button below to buy your promo code
+            </h2>
+            <Button
+              onClick={() => { setShowPromoDialog(false); navigate("/buy-promo"); }}
+              className="w-full py-5 bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-semibold rounded-xl"
+            >
+              Buy Promo Code
+            </Button>
+            <Button
+              onClick={() => setShowPromoDialog(false)}
+              variant="outline"
+              className="w-full py-5 border-green-primary text-green-primary font-semibold rounded-xl"
+            >
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
