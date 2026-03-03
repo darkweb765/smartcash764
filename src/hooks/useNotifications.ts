@@ -4,7 +4,7 @@ const NOTIFICATIONS_KEY = "smartcash_notifications";
 
 export interface Notification {
   id: string;
-  type: "claim" | "withdrawal_success" | "withdrawal_pending" | "withdrawal_activate";
+  type: "claim" | "withdrawal_success" | "withdrawal_pending" | "withdrawal_activate" | "promo_purchased" | "promo_activated";
   message: string;
   amount?: number;
   timestamp: number;

@@ -3,16 +3,24 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, Check, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "failed";
 
 const BuyPromo = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [pageState, setPageState] = useState<PageState>("form");
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(3);
+
+  // Admin access
+  const [showAccessDialog, setShowAccessDialog] = useState(false);
+  const [accessCode, setAccessCode] = useState("");
+  const [accessError, setAccessError] = useState(false);
 
   useEffect(() => {
     if (pageState === "loading") {
@@ -46,9 +54,49 @@ const BuyPromo = () => {
   const handleCopy = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
+    if (field === "account") {
+      toast({ title: "Account number copied" });
+    }
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  const handleTransferMade = async () => {
+    // Save purchase to database
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Get username from profile
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("user_id", user.id)
+          .single();
+
+        await supabase.from("promo_purchases").insert({
+          user_id: user.id,
+          full_name: fullName,
+          email: email,
+          username: profile?.username || "Unknown",
+          status: "pending",
+        });
+      }
+    } catch (e) {
+      console.error("Error saving purchase:", e);
+    }
+    setPageState("verifying");
+  };
+
+  const handleAccessCodeSubmit = () => {
+    if (accessCode === "351710") {
+      localStorage.setItem("admin_access_code", "351710");
+      setShowAccessDialog(false);
+      setAccessCode("");
+      setAccessError(false);
+      navigate("/admin-panel");
+    } else {
+      setAccessError(true);
+    }
+  };
 
   // Loading screen
   if (pageState === "loading") {
@@ -196,7 +244,7 @@ const BuyPromo = () => {
             </p>
 
             <Button
-              onClick={() => setPageState("verifying")}
+              onClick={handleTransferMade}
               className="w-full py-6 bg-yellow-500 hover:bg-yellow-500/90 text-foreground font-bold text-base rounded-xl"
             >
               I have made this bank Transfer
@@ -209,7 +257,14 @@ const BuyPromo = () => {
 
   // Form screen
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative">
+      {/* Hidden admin circle */}
+      <button
+        onClick={() => { setShowAccessDialog(true); setAccessCode(""); setAccessError(false); }}
+        className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/80 z-50"
+        aria-label="admin"
+      />
+
       <div className="bg-green-primary text-primary-foreground px-4 py-4 flex items-center gap-3">
         <button onClick={() => navigate(-1)}>
           <ArrowLeft className="w-6 h-6" />
@@ -271,6 +326,29 @@ const BuyPromo = () => {
             className="w-full py-5 bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-semibold rounded-xl"
           >
             I Understand
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Access Code Dialog */}
+      <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden bg-background">
+          <h2 className="text-xl font-bold text-foreground mb-4">Enter Access ID Code</h2>
+          <input
+            type="password"
+            value={accessCode}
+            onChange={(e) => { setAccessCode(e.target.value); setAccessError(false); }}
+            placeholder="Access ID Code"
+            className="w-full px-4 py-3.5 mb-3 rounded-lg bg-muted text-foreground text-[15px] outline-none placeholder:text-muted-foreground border-0 text-center"
+          />
+          {accessError && (
+            <p className="text-red-500 text-sm font-semibold mb-3">Access Denied</p>
+          )}
+          <Button
+            onClick={handleAccessCodeSubmit}
+            className="w-full py-5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl"
+          >
+            Enter
           </Button>
         </DialogContent>
       </Dialog>

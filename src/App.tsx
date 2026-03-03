@@ -17,6 +17,7 @@ import Notifications from "./pages/Notifications";
 import Transactions from "./pages/Transactions";
 import Promo from "./pages/Promo";
 import BuyPromo from "./pages/BuyPromo";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -67,6 +68,7 @@ const AppRoutes = () => {
       <Route path="/transactions" element={session ? <Transactions /> : <Navigate to="/welcome" replace />} />
       <Route path="/promo" element={session ? <Promo /> : <Navigate to="/welcome" replace />} />
       <Route path="/buy-promo" element={session ? <BuyPromo /> : <Navigate to="/welcome" replace />} />
+      <Route path="/admin-panel" element={<AdminPanel />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
