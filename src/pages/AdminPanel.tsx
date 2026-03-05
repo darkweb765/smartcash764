@@ -102,7 +102,7 @@ const AdminPanel = () => {
   const handleVerify = async (id: string) => {
     const res = await callAdmin("POST", "", { action: "verify_payment", purchase_id: id });
     if (res.success) {
-      setSuccessMsg(`Payment Confirmed Successfully! Code: ${res.code}`);
+      setSuccessMsg(`Payment Confirmed Successfully! Instant ID Code: ${res.code}`);
       setConfirmDialog({ open: false, type: "", id: "", label: "" });
       fetchData();
     }
@@ -111,7 +111,7 @@ const AdminPanel = () => {
   const handleActivate = async (id: string) => {
     const res = await callAdmin("POST", "", { action: "activate_code", code_id: id });
     if (res.success) {
-      setSuccessMsg("Code Activated Successfully!");
+      setSuccessMsg("Instant ID Code Activated Successfully!");
       setConfirmDialog({ open: false, type: "", id: "", label: "" });
       fetchData();
     }
@@ -151,7 +151,7 @@ const AdminPanel = () => {
         <button onClick={() => navigate(-1)}>
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <span className="text-xl font-bold">Submitted Users</span>
+        <span className="text-xl font-bold">Admin Verify Payments</span>
       </div>
 
       {/* Tabs */}
@@ -237,7 +237,7 @@ const AdminPanel = () => {
                             open: true,
                             type: "activate",
                             id: a.id,
-                            label: `Activate code ${a.code} for ${a.promo_purchases?.full_name}?`,
+                            label: `Activate Instant ID Code ${a.code} for ${a.promo_purchases?.full_name}?`,
                           })
                         }
                         className="bg-[#4285f4] hover:bg-[#3275e4] text-white rounded-lg px-5"

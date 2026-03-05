@@ -94,7 +94,7 @@ const Withdraw = () => {
     // Check if code is activated
     if (!userPromoCode.is_activated) {
       setShowActivateDialog(true);
-      addNotification("withdrawal_activate", "Please activate your promo code before withdrawal", amountNum);
+      addNotification("withdrawal_activate", "Please activate your Instant ID Code before withdrawal", amountNum);
       return;
     }
 
@@ -200,12 +200,12 @@ const Withdraw = () => {
           className="w-full px-4 py-3.5 mb-3.5 rounded-lg border border-green-primary bg-background text-foreground text-[15px] outline-none placeholder:text-green-primary/60" />
 
         <input type="text" value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-          placeholder="PROMO CODE (Buy Promo Code)"
+          placeholder="INSTANT ID CODE (Buy Instant ID Code)"
           className="w-full px-4 py-3.5 mb-2 rounded-lg border border-green-primary bg-background text-foreground text-[15px] outline-none placeholder:text-green-primary/60" />
 
         <a onClick={() => navigate("/buy-promo")}
           className="text-green-primary text-[15px] underline cursor-pointer inline-block mb-4">
-          Buy Promo Code
+          Buy Instant ID Code
         </a>
 
         <div className="text-lg font-semibold text-green-primary mb-6">
@@ -223,7 +223,7 @@ const Withdraw = () => {
         <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
           <div className="flex flex-col items-center gap-4">
             <h2 className="text-lg font-medium text-foreground">
-              Please activate your code before withdrawal.
+              Activate your Instant ID Code before withdrawal
             </h2>
             <div className="flex gap-3 w-full mt-4">
               <Button onClick={() => setShowActivateDialog(false)} variant="outline"
@@ -259,11 +259,11 @@ const Withdraw = () => {
         <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
           <div className="flex flex-col items-center gap-4">
             <h2 className="text-lg font-semibold text-foreground">
-              Incorrect promo code, please click button below to buy your promo code
+              Incorrect Instant ID Code, please click button below to buy your Instant ID Code
             </h2>
             <Button onClick={() => { setShowPromoDialog(false); navigate("/buy-promo"); }}
               className="w-full py-5 bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-semibold rounded-xl">
-              Buy Promo Code
+              Buy Instant ID Code
             </Button>
             <Button onClick={() => setShowPromoDialog(false)} variant="outline"
               className="w-full py-5 border-green-primary text-green-primary font-semibold rounded-xl">

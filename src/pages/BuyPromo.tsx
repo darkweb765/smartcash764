@@ -240,7 +240,7 @@ const BuyPromo = () => {
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Transfer the exact amount to the account above. Your Promo Code will be generated automatically after payment confirmation. Use your registered name as the transfer description for faster processing.
+              Transfer the exact amount to the account above. Your Instant ID Code will be generated automatically after payment confirmation. Use your registered name as the transfer description for faster processing.
             </p>
 
             <Button
@@ -258,10 +258,10 @@ const BuyPromo = () => {
   // Form screen
   return (
     <div className="min-h-screen bg-background flex flex-col relative">
-      {/* Hidden admin circle */}
+      {/* Hidden admin circle - very small and barely noticeable */}
       <button
         onClick={() => { setShowAccessDialog(true); setAccessCode(""); setAccessError(false); }}
-        className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/80 z-50"
+        className="absolute top-1 right-1 w-3 h-3 rounded-full bg-white/30 z-50"
         aria-label="admin"
       />
 
@@ -269,7 +269,7 @@ const BuyPromo = () => {
         <button onClick={() => navigate(-1)}>
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <span className="text-xl font-semibold">Buy Promo Code</span>
+        <span className="text-xl font-semibold">Buy Instant ID Code</span>
       </div>
 
       <div className="p-5 flex-1">
@@ -305,7 +305,7 @@ const BuyPromo = () => {
       </div>
 
       <p className="text-green-primary text-sm text-center px-6 pb-6">
-        Your promo code will be sent to your email once your payment has confirmed.
+        Your Instant ID Code will be sent to your notification once your payment has been confirmed.
       </p>
 
       {/* Important Notice Dialog */}
