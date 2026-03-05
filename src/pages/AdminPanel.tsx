@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Shield, Zap, CreditCard } from "lucide-react";
+import { ArrowLeft, CheckCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "purchases" | "activations" | "withdrawals";
 
@@ -44,7 +42,6 @@ interface Withdrawal {
 
 const AdminPanel = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [tab, setTab] = useState<Tab>("purchases");
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [activations, setActivations] = useState<Activation[]>([]);
@@ -102,7 +99,7 @@ const AdminPanel = () => {
   const handleVerify = async (id: string) => {
     const res = await callAdmin("POST", "", { action: "verify_payment", purchase_id: id });
     if (res.success) {
-      setSuccessMsg(`Payment Confirmed Successfully! Instant ID Code: ${res.code}`);
+      setSuccessMsg(`Payment Confirmed Successfully!\nInstant ID Code: ${res.code}`);
       setConfirmDialog({ open: false, type: "", id: "", label: "" });
       fetchData();
     }
@@ -138,32 +135,47 @@ const AdminPanel = () => {
       ", " + date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   };
 
-  const tabs: { key: Tab; label: string; icon: any }[] = [
-    { key: "purchases", label: "Payments", icon: CreditCard },
-    { key: "activations", label: "Activate", icon: Zap },
-    { key: "withdrawals", label: "Withdrawals", icon: Shield },
+  const tabLabels: { key: Tab; label: string }[] = [
+    { key: "purchases", label: "Submitted Users" },
+    { key: "activations", label: "Activate Codes" },
+    { key: "withdrawals", label: "Withdrawals" },
   ];
+
+  const getHeaderTitle = () => {
+    if (tab === "purchases") return "Submitted Users";
+    if (tab === "activations") return "Activate Codes";
+    return "Withdrawals";
+  };
 
   return (
     <div className="min-h-screen bg-[#f5f5f0]">
       {/* Header */}
-      <div className="bg-[#2d4a3e] text-white px-4 py-4 flex items-center gap-3">
-        <button onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-6 h-6" />
+      <div className="bg-[#2d4a3e] text-white px-4 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <span className="text-xl font-bold">{getHeaderTitle()}</span>
+        </div>
+        <button
+          onClick={fetchData}
+          className="px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          Refresh
         </button>
-        <span className="text-xl font-bold">Admin Verify Payments</span>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-border bg-background">
-        {tabs.map((t) => (
+      <div className="flex border-b border-[#d4d4c8] bg-white">
+        {tabLabels.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex-1 py-3 text-sm font-semibold text-center transition-colors ${
               tab === t.key
-                ? "text-primary border-b-2 border-primary"
-                : "text-muted-foreground"
+                ? "text-[#2d4a3e] border-b-2 border-[#2d4a3e]"
+                : "text-[#8a8a7a]"
             }`}
           >
             {t.label}
@@ -172,27 +184,34 @@ const AdminPanel = () => {
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-3">
+      <div className="p-4 space-y-4">
         {loading ? (
-          <div className="text-center py-10 text-muted-foreground">Loading...</div>
+          <div className="text-center py-10 text-[#8a8a7a]">Loading...</div>
         ) : (
           <>
             {/* Purchases Tab */}
             {tab === "purchases" && (
               purchases.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">No pending payments</div>
+                <div className="text-center py-10 text-[#8a8a7a]">No pending payments</div>
               ) : (
                 purchases.map((p) => (
-                  <div key={p.id} className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
-                    <div className="w-12 h-12 rounded-full bg-[#8a9a8e] flex items-center justify-center text-white font-bold text-lg">
-                      {p.full_name.charAt(0).toUpperCase()}
+                  <div key={p.id} className="bg-white rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-full bg-[#8a9a8e] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                        {p.full_name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div className="min-w-0">
+                            <p className="font-bold text-[#1a1a1a] text-base">{p.full_name}</p>
+                            <p className="text-sm text-[#6a6a6a] truncate">{p.email}</p>
+                            <p className="text-xs text-[#8a8a7a] mt-1">{formatDate(p.created_at)}</p>
+                          </div>
+                          <span className="text-xs text-[#8a8a7a] ml-2 flex-shrink-0">user: {p.username.substring(0, 3)}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-foreground truncate">{p.full_name}</p>
-                      <p className="text-sm text-muted-foreground truncate">{p.email}</p>
-                      <p className="text-xs text-muted-foreground">{formatDate(p.created_at)}</p>
-                    </div>
-                    <div className="text-right flex flex-col items-end gap-1">
+                    <div className="flex justify-end mt-3">
                       <Button
                         size="sm"
                         onClick={() =>
@@ -203,11 +222,10 @@ const AdminPanel = () => {
                             label: `Are you sure you want to confirm payment for ${p.full_name}?`,
                           })
                         }
-                        className="bg-[#4285f4] hover:bg-[#3275e4] text-white rounded-lg px-5"
+                        className="bg-[#4285f4] hover:bg-[#3275e4] text-white rounded-lg px-6 py-2 font-semibold"
                       >
                         Verify
                       </Button>
-                      <span className="text-xs text-muted-foreground">user: {p.username.substring(0, 3)}</span>
                     </div>
                   </div>
                 ))
@@ -217,19 +235,21 @@ const AdminPanel = () => {
             {/* Activations Tab */}
             {tab === "activations" && (
               activations.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">No pending activations</div>
+                <div className="text-center py-10 text-[#8a8a7a]">No pending activations</div>
               ) : (
                 activations.map((a) => (
-                  <div key={a.id} className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
-                    <div className="w-12 h-12 rounded-full bg-[#8a9a8e] flex items-center justify-center text-white font-bold text-lg">
-                      {(a.promo_purchases?.full_name || "U").charAt(0).toUpperCase()}
+                  <div key={a.id} className="bg-white rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-full bg-[#8a9a8e] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                        {(a.promo_purchases?.full_name || "U").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-[#1a1a1a] text-base">{a.promo_purchases?.full_name}</p>
+                        <p className="text-sm text-[#6a6a6a] truncate">{a.promo_purchases?.email}</p>
+                        <p className="text-xs text-[#2d4a3e] font-mono mt-1">{a.code}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-foreground truncate">{a.promo_purchases?.full_name}</p>
-                      <p className="text-sm text-muted-foreground truncate">{a.promo_purchases?.email}</p>
-                      <p className="text-xs text-primary font-mono">{a.code}</p>
-                    </div>
-                    <div className="text-right">
+                    <div className="flex justify-end mt-3">
                       <Button
                         size="sm"
                         onClick={() =>
@@ -240,7 +260,7 @@ const AdminPanel = () => {
                             label: `Activate Instant ID Code ${a.code} for ${a.promo_purchases?.full_name}?`,
                           })
                         }
-                        className="bg-[#4285f4] hover:bg-[#3275e4] text-white rounded-lg px-5"
+                        className="bg-[#4285f4] hover:bg-[#3275e4] text-white rounded-lg px-6 py-2 font-semibold"
                       >
                         Activate
                       </Button>
@@ -253,19 +273,24 @@ const AdminPanel = () => {
             {/* Withdrawals Tab */}
             {tab === "withdrawals" && (
               withdrawals.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">No pending withdrawals</div>
+                <div className="text-center py-10 text-[#8a8a7a]">No pending withdrawals</div>
               ) : (
                 withdrawals.map((w) => (
-                  <div key={w.id} className="bg-white rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-[#8a9a8e] flex items-center justify-center text-white font-bold text-lg">
+                  <div key={w.id} className="bg-white rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-full bg-[#8a9a8e] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                         {(w.promo_codes?.promo_purchases?.full_name || "U").charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-foreground truncate">{w.promo_codes?.promo_purchases?.full_name}</p>
-                        <p className="text-sm text-muted-foreground truncate">{w.promo_codes?.promo_purchases?.email}</p>
-                        <p className="text-xs text-muted-foreground">{formatDate(w.created_at)}</p>
+                        <p className="font-bold text-[#1a1a1a] text-base">{w.promo_codes?.promo_purchases?.full_name}</p>
+                        <p className="text-sm text-[#6a6a6a] truncate">{w.promo_codes?.promo_purchases?.email}</p>
+                        <p className="text-xs text-[#8a8a7a] mt-1">{formatDate(w.created_at)}</p>
+                        <p className="text-xs text-[#6a6a6a] mt-1">
+                          Bank: {w.bank_name} | Acc: {w.account_number} | ₦{w.amount}
+                        </p>
                       </div>
+                    </div>
+                    <div className="flex justify-end mt-3">
                       <Button
                         size="sm"
                         onClick={() =>
@@ -276,13 +301,10 @@ const AdminPanel = () => {
                             label: `Approve withdrawal of ₦${w.amount} for ${w.promo_codes?.promo_purchases?.full_name}?`,
                           })
                         }
-                        className="bg-green-600 hover:bg-green-700 text-white rounded-lg px-5"
+                        className="bg-[#2d4a3e] hover:bg-[#1d3a2e] text-white rounded-lg px-6 py-2 font-semibold"
                       >
                         Approve
                       </Button>
-                    </div>
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      Bank: {w.bank_name} | Acc: {w.account_number} | ₦{w.amount}
                     </div>
                   </div>
                 ))
@@ -294,17 +316,17 @@ const AdminPanel = () => {
 
       {/* Confirm Dialog */}
       <Dialog open={confirmDialog.open} onOpenChange={(o) => setConfirmDialog({ ...confirmDialog, open: o })}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
-          <h2 className="text-lg font-semibold text-foreground mb-4">{confirmDialog.label}</h2>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden bg-white">
+          <h2 className="text-lg font-semibold text-[#1a1a1a] mb-4">{confirmDialog.label}</h2>
           <div className="flex gap-3">
             <Button
               onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}
               variant="outline"
-              className="flex-1 py-5"
+              className="flex-1 py-5 border-[#d4d4c8] text-[#1a1a1a]"
             >
               Cancel
             </Button>
-            <Button onClick={onConfirm} className="flex-1 py-5 bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button onClick={onConfirm} className="flex-1 py-5 bg-[#2d4a3e] hover:bg-[#1d3a2e] text-white">
               Confirm
             </Button>
           </div>
@@ -313,13 +335,13 @@ const AdminPanel = () => {
 
       {/* Success Dialog */}
       <Dialog open={!!successMsg} onOpenChange={() => setSuccessMsg("")}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden bg-white">
           <div className="flex flex-col items-center gap-3">
-            <CheckCircle className="w-16 h-16 text-green-500" />
-            <h2 className="text-lg font-bold text-foreground">{successMsg}</h2>
+            <CheckCircle className="w-16 h-16 text-[#2d4a3e]" />
+            <h2 className="text-lg font-bold text-[#1a1a1a] whitespace-pre-line">{successMsg}</h2>
             <Button
               onClick={() => setSuccessMsg("")}
-              className="w-full py-5 bg-primary hover:bg-primary/90 text-primary-foreground mt-2"
+              className="w-full py-5 bg-[#2d4a3e] hover:bg-[#1d3a2e] text-white mt-2"
             >
               OK
             </Button>

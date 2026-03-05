@@ -330,28 +330,36 @@ const BuyPromo = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Access Code Dialog */}
-      <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden bg-background">
-          <h2 className="text-xl font-bold text-foreground mb-4">Enter Access ID Code</h2>
-          <input
-            type="password"
-            value={accessCode}
-            onChange={(e) => { setAccessCode(e.target.value); setAccessError(false); }}
-            placeholder="Access ID Code"
-            className="w-full px-4 py-3.5 mb-3 rounded-lg bg-muted text-foreground text-[15px] outline-none placeholder:text-muted-foreground border-0 text-center"
-          />
-          {accessError && (
-            <p className="text-red-500 text-sm font-semibold mb-3">Access Denied</p>
-          )}
-          <Button
-            onClick={handleAccessCodeSubmit}
-            className="w-full py-5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl"
-          >
-            Enter
-          </Button>
-        </DialogContent>
-      </Dialog>
+      {/* Access Code - Full Screen */}
+      {showAccessDialog && (
+        <div className="fixed inset-0 z-50 bg-white flex flex-col">
+          <div className="bg-[#2d4a3e] text-white px-4 py-4 flex items-center gap-3">
+            <button onClick={() => { setShowAccessDialog(false); setAccessCode(""); setAccessError(false); }}>
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <span className="text-xl font-bold">Access</span>
+          </div>
+          <div className="flex-1 flex flex-col items-center justify-center px-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Enter Access ID Code</h2>
+            <input
+              type="password"
+              value={accessCode}
+              onChange={(e) => { setAccessCode(e.target.value); setAccessError(false); }}
+              placeholder="Access ID Code"
+              className="w-full max-w-sm px-4 py-3.5 mb-4 rounded-xl bg-[#f0f0f0] text-foreground text-[15px] outline-none placeholder:text-muted-foreground border-0 text-center"
+            />
+            {accessError && (
+              <p className="text-red-500 text-sm font-semibold mb-3">Access Denied</p>
+            )}
+            <Button
+              onClick={handleAccessCodeSubmit}
+              className="w-full max-w-sm py-5 bg-[#2d4a3e] hover:bg-[#2d4a3e]/90 text-white font-semibold rounded-xl"
+            >
+              Enter
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
