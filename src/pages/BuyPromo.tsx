@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+import { useAppContext } from "@/contexts/AppContext";
+
 type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "failed";
 
 const BuyPromo = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { addNotification } = useAppContext();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [pageState, setPageState] = useState<PageState>("form");
@@ -43,6 +46,33 @@ const BuyPromo = () => {
     }
   }, [pageState]);
 
+  // Poll for admin verification when on failed screen
+  useEffect(() => {
+    if (pageState !== "failed") return;
+    const poll = setInterval(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        // Check if user has a promo code generated (means admin verified)
+        const { data: codes } = await supabase
+          .from("promo_codes")
+          .select("code")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (codes && codes.length > 0) {
+          clearInterval(poll);
+          const code = codes[0].code;
+          addNotification("promo_purchased", `Purchase Successfully 🎉🎉 This is your Promo Code: ${code}`);
+          setShowSuccessPopup(true);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }, 5000);
+    return () => clearInterval(poll);
+  }, [pageState, addNotification]);
+
   const handlePay = () => {
     if (!fullName || !email) {
       alert("Please fill in all fields");
@@ -59,6 +89,9 @@ const BuyPromo = () => {
     }
     setTimeout(() => setCopiedField(null), 2000);
   };
+
+  // Success popup state
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleTransferMade = async () => {
     // Save purchase to database
@@ -240,7 +273,7 @@ const BuyPromo = () => {
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Transfer the exact amount to the account above. Your Instant ID Code will be generated automatically after payment confirmation. Use your registered name as the transfer description for faster processing.
+              Transfer the exact amount to the account above. Your Promo Code will be generated automatically after payment confirmation. Use your registered name as the transfer description for faster processing.
             </p>
 
             <Button
@@ -269,7 +302,7 @@ const BuyPromo = () => {
         <button onClick={() => navigate(-1)}>
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <span className="text-xl font-semibold">Buy Instant ID Code</span>
+        <span className="text-xl font-semibold">Buy Promo Code</span>
       </div>
 
       <div className="p-5 flex-1">
@@ -305,7 +338,7 @@ const BuyPromo = () => {
       </div>
 
       <p className="text-green-primary text-sm text-center px-6 pb-6">
-        Your Instant ID Code will be sent to your notification once your payment has been confirmed.
+        Your Promo Code will be sent to your notification once your payment has been confirmed.
       </p>
 
       {/* Important Notice Dialog */}
@@ -327,6 +360,30 @@ const BuyPromo = () => {
           >
             I Understand
           </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Purchased Successfully Popup */}
+      <Dialog open={showSuccessPopup} onOpenChange={setShowSuccessPopup}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-8 text-center [&>button.absolute]:hidden bg-background">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-20 h-20 rounded-full bg-green-primary flex items-center justify-center">
+              <Check className="w-10 h-10 text-white" strokeWidth={3} />
+            </div>
+            <h2 className="text-xl font-bold text-green-primary">
+              Purchased Successfully! 🎉
+            </h2>
+            <p className="text-muted-foreground text-base leading-relaxed">
+              Congratulations! You have successfully purchased your promo code.
+              Please check your app notifications to copy your Promo Code.
+            </p>
+            <Button
+              onClick={() => { setShowSuccessPopup(false); navigate("/notifications"); }}
+              className="w-full py-5 bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-bold text-lg rounded-full"
+            >
+              Thanks
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -99,7 +99,7 @@ const AdminPanel = () => {
   const handleVerify = async (id: string) => {
     const res = await callAdmin("POST", "", { action: "verify_payment", purchase_id: id });
     if (res.success) {
-      setSuccessMsg(`Payment Confirmed Successfully!\nInstant ID Code: ${res.code}`);
+      setSuccessMsg(`Payment Confirmed Successfully!\nPromo Code: ${res.code}`);
       setConfirmDialog({ open: false, type: "", id: "", label: "" });
       fetchData();
     }
@@ -108,7 +108,7 @@ const AdminPanel = () => {
   const handleActivate = async (id: string) => {
     const res = await callAdmin("POST", "", { action: "activate_code", code_id: id });
     if (res.success) {
-      setSuccessMsg("Instant ID Code Activated Successfully!");
+      setSuccessMsg("Promo Code Activated Successfully!");
       setConfirmDialog({ open: false, type: "", id: "", label: "" });
       fetchData();
     }
@@ -257,7 +257,7 @@ const AdminPanel = () => {
                             open: true,
                             type: "activate",
                             id: a.id,
-                            label: `Activate Instant ID Code ${a.code} for ${a.promo_purchases?.full_name}?`,
+                            label: `Activate Promo Code ${a.code} for ${a.promo_purchases?.full_name}?`,
                           })
                         }
                         className="bg-[#4285f4] hover:bg-[#3275e4] text-white rounded-lg px-6 py-2 font-semibold"

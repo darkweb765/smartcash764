@@ -95,9 +95,9 @@ Deno.serve(async (req) => {
           .single();
         if (pErr) throw pErr;
 
-        // Generate unique Instant ID Code (INST@XXXX format)
+        // Generate unique Promo Code (INST-XXXX-SP format)
         const randomNum = Math.floor(1000 + Math.random() * 9000);
-        const code = `INST@${randomNum}`;
+        const code = `INST-${randomNum}-SP`;
 
         // Update purchase status
         await supabase
