@@ -18,6 +18,7 @@ import Transactions from "./pages/Transactions";
 import Promo from "./pages/Promo";
 import BuyPromo from "./pages/BuyPromo";
 import AdminPanel from "./pages/AdminPanel";
+import HelpSupport from "./pages/HelpSupport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
