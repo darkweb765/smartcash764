@@ -69,6 +69,7 @@ const AppRoutes = () => {
       <Route path="/transactions" element={session ? <Transactions /> : <Navigate to="/welcome" replace />} />
       <Route path="/promo" element={session ? <Promo /> : <Navigate to="/welcome" replace />} />
       <Route path="/buy-promo" element={session ? <BuyPromo /> : <Navigate to="/welcome" replace />} />
+      <Route path="/help-support" element={session ? <HelpSupport /> : <Navigate to="/welcome" replace />} />
       <Route path="/admin-panel" element={<AdminPanel />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />

@@ -39,7 +39,7 @@ const Promo = () => {
       label: "Contact Support",
       color: "bg-purple-100",
       iconColor: "text-purple-600",
-      onClick: () => window.open("https://wa.me/2349155306297?text=Hello%2C%20I%20contacted%20you%20from%20SmartPay.%20I%20need%20help.", "_blank"),
+      onClick: () => navigate("/help-support"),
     },
   ];
 
