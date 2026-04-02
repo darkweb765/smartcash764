@@ -77,6 +77,13 @@ const AppRoutes = () => {
       <Route path="/promo" element={session ? <Promo /> : <Navigate to="/welcome" replace />} />
       <Route path="/buy-promo" element={session ? <BuyPromo /> : <Navigate to="/welcome" replace />} />
       <Route path="/help-support" element={session ? <HelpSupport /> : <Navigate to="/welcome" replace />} />
+      <Route path="/airtime" element={session ? <Airtime /> : <Navigate to="/welcome" replace />} />
+      <Route path="/data" element={session ? <Data /> : <Navigate to="/welcome" replace />} />
+      <Route path="/cable-tv" element={session ? <CableTv /> : <Navigate to="/welcome" replace />} />
+      <Route path="/electricity" element={session ? <Electricity /> : <Navigate to="/welcome" replace />} />
+      <Route path="/internet" element={session ? <Internet /> : <Navigate to="/welcome" replace />} />
+      <Route path="/betting" element={session ? <Betting /> : <Navigate to="/welcome" replace />} />
+      <Route path="/wallet" element={session ? <Wallet /> : <Navigate to="/welcome" replace />} />
       <Route path="/admin-panel" element={<AdminPanel />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
