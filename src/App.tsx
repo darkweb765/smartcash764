@@ -19,6 +19,13 @@ import Promo from "./pages/Promo";
 import BuyPromo from "./pages/BuyPromo";
 import AdminPanel from "./pages/AdminPanel";
 import HelpSupport from "./pages/HelpSupport";
+import Airtime from "./pages/Airtime";
+import Data from "./pages/Data";
+import CableTv from "./pages/CableTv";
+import Electricity from "./pages/Electricity";
+import Internet from "./pages/Internet";
+import Betting from "./pages/Betting";
+import Wallet from "./pages/Wallet";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
