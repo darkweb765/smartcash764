@@ -1,6 +1,6 @@
 import { Home, CreditCard, User } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface NavItem {
   icon: React.ReactNode;
@@ -11,8 +11,16 @@ interface NavItem {
 }
 
 const BottomNav = () => {
-  const [activeTab, setActiveTab] = useState("home");
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  const getActiveTab = () => {
+    if (location.pathname === "/wallet") return "wallet";
+    if (location.pathname === "/profile") return "profile";
+    return "home";
+  };
+
+  const [activeTab, setActiveTab] = useState(getActiveTab());
 
   const navItems: NavItem[] = [
     {
@@ -27,6 +35,7 @@ const BottomNav = () => {
       icon: <CreditCard className="w-6 h-6" strokeWidth={1.5} />,
       activeIcon: <CreditCard className="w-6 h-6" strokeWidth={1.5} />,
       label: "Wallet",
+      path: "/wallet",
     },
     {
       id: "profile",
