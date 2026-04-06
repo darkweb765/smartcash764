@@ -25,11 +25,11 @@ const ServiceGrid = () => {
     { icon: <Wifi className="w-7 h-7" strokeWidth={1.5} />, label: "Data", path: "/data" },
     { icon: <Monitor className="w-7 h-7" strokeWidth={1.5} />, label: "CableTv", path: "/cable-tv" },
     { icon: <Zap className="w-7 h-7" strokeWidth={1.5} />, label: "Electricity", path: "/electricity" },
-    { icon: <Globe className="w-7 h-7" strokeWidth={1.5} />, label: "Internet", path: "/internet" },
-    { icon: <CreditCard className="w-7 h-7" strokeWidth={1.5} />, label: "Virtual Card", path: "/buy-promo" },
+    { icon: <Globe className="w-7 h-7" strokeWidth={1.5} />, label: "Join Group", path: "/join-group" },
+    { icon: <CreditCard className="w-7 h-7" strokeWidth={1.5} />, label: "Buy Promo Code", path: "/buy-promo" },
     { icon: <AtSign className="w-7 h-7" strokeWidth={1.5} />, label: "Betting", path: "/betting" },
     { icon: <Gift className="w-7 h-7" strokeWidth={1.5} />, label: "Giftcard", path: "/buy-promo" },
-    { icon: <Users className="w-7 h-7" strokeWidth={1.5} />, label: "Gift User", path: "/buy-promo" },
+    { icon: <Users className="w-7 h-7" strokeWidth={1.5} />, label: "Contact Us", path: "/help-support" },
   ];
 
   return (

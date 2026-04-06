@@ -18,6 +18,7 @@ import Transactions from "./pages/Transactions";
 import Promo from "./pages/Promo";
 import BuyPromo from "./pages/BuyPromo";
 import AdminPanel from "./pages/AdminPanel";
+import JoinGroup from "./pages/JoinGroup";
 import HelpSupport from "./pages/HelpSupport";
 import Airtime from "./pages/Airtime";
 import Data from "./pages/Data";
@@ -82,6 +83,7 @@ const AppRoutes = () => {
       <Route path="/cable-tv" element={session ? <CableTv /> : <Navigate to="/welcome" replace />} />
       <Route path="/electricity" element={session ? <Electricity /> : <Navigate to="/welcome" replace />} />
       <Route path="/internet" element={session ? <Internet /> : <Navigate to="/welcome" replace />} />
+      <Route path="/join-group" element={session ? <JoinGroup /> : <Navigate to="/welcome" replace />} />
       <Route path="/betting" element={session ? <Betting /> : <Navigate to="/welcome" replace />} />
       <Route path="/wallet" element={session ? <Wallet /> : <Navigate to="/welcome" replace />} />
       <Route path="/admin-panel" element={<AdminPanel />} />
