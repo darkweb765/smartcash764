@@ -41,7 +41,7 @@ const HelpSupport = () => {
       iconColor: "text-red-500",
       title: "Report Issue",
       subtitle: "Report a problem",
-      onClick: () => window.open(whatsappUrl, "_blank"),
+      onClick: () => navigate("/report-issue"),
     },
     {
       icon: Phone,
