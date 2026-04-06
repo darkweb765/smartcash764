@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          message: string
+          sender_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          message: string
+          sender_type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          message?: string
+          sender_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -103,6 +130,33 @@ export type Database = {
           status?: string
           user_id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          message: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          message: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          message?: string
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
