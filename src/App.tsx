@@ -82,6 +82,7 @@ const AppRoutes = () => {
       <Route path="/cable-tv" element={session ? <CableTv /> : <Navigate to="/welcome" replace />} />
       <Route path="/electricity" element={session ? <Electricity /> : <Navigate to="/welcome" replace />} />
       <Route path="/internet" element={session ? <Internet /> : <Navigate to="/welcome" replace />} />
+      <Route path="/join-group" element={session ? <JoinGroup /> : <Navigate to="/welcome" replace />} />
       <Route path="/betting" element={session ? <Betting /> : <Navigate to="/welcome" replace />} />
       <Route path="/wallet" element={session ? <Wallet /> : <Navigate to="/welcome" replace />} />
       <Route path="/admin-panel" element={<AdminPanel />} />
