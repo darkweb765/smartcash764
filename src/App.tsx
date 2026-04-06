@@ -18,6 +18,7 @@ import Transactions from "./pages/Transactions";
 import Promo from "./pages/Promo";
 import BuyPromo from "./pages/BuyPromo";
 import AdminPanel from "./pages/AdminPanel";
+import JoinGroup from "./pages/JoinGroup";
 import HelpSupport from "./pages/HelpSupport";
 import Airtime from "./pages/Airtime";
 import Data from "./pages/Data";
