@@ -24,7 +24,7 @@ const ServiceGrid = () => {
     { icon: <Phone className="w-7 h-7" strokeWidth={1.5} />, label: "Airtime", path: "/airtime" },
     { icon: <Wifi className="w-7 h-7" strokeWidth={1.5} />, label: "Data", path: "/data" },
     { icon: <Monitor className="w-7 h-7" strokeWidth={1.5} />, label: "CableTv", path: "/cable-tv" },
-    { icon: <Zap className="w-7 h-7" strokeWidth={1.5} />, label: "Electricity", path: "/electricity" },
+    { icon: <Zap className="w-7 h-7" strokeWidth={1.5} />, label: "Live Chat", path: "/live-chat" },
     { icon: <Globe className="w-7 h-7" strokeWidth={1.5} />, label: "Join Group", path: "/join-group" },
     { icon: <CreditCard className="w-7 h-7" strokeWidth={1.5} />, label: "Buy Promo Code", path: "/buy-promo" },
     { icon: <AtSign className="w-7 h-7" strokeWidth={1.5} />, label: "Betting", path: "/betting" },
