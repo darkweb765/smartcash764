@@ -23,7 +23,6 @@ const HelpSupport = () => {
     fetchUser();
   }, []);
 
-  const whatsappUrl = "https://wa.me/2349155306297?text=Hello%2C%20I%20am%20contacting%20you%20from%20Smart%20Pay.%20I%20need%20help.";
   const whatsappChannel = "https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40";
 
   const contactOptions = [
@@ -33,7 +32,7 @@ const HelpSupport = () => {
       iconColor: "text-green-600",
       title: "Live Chat",
       subtitle: "Instant response",
-      onClick: () => window.open(whatsappUrl, "_blank"),
+      onClick: () => navigate("/live-chat"),
     },
     {
       icon: AlertTriangle,
@@ -56,8 +55,8 @@ const HelpSupport = () => {
       iconBg: "bg-green-50",
       iconColor: "text-green-600",
       title: "Email Us",
-      subtitle: "Get ticket ID",
-      onClick: () => window.open(whatsappUrl, "_blank"),
+      subtitle: "supporstmart@gmail.com",
+      onClick: () => window.open("mailto:supporstmart@gmail.com?subject=Smart%20Pay%20Support&body=Hello%2C%20I%20am%20contacting%20you%20from%20Smart%20Pay.%20I%20need%20help."),
     },
   ];
 
@@ -81,7 +80,7 @@ const HelpSupport = () => {
       {/* Green Header */}
       <div className="bg-green-primary text-white px-4 pt-4 pb-8 rounded-b-3xl">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={() => navigate(-1)}>
+          <button onClick={() => navigate(-1)} className="active:opacity-70">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <span className="text-lg font-semibold flex-1 text-center pr-6">Help & Support</span>
@@ -100,7 +99,8 @@ const HelpSupport = () => {
             <button
               key={index}
               onClick={item.onClick}
-              className="bg-card border border-border rounded-xl p-4 text-left hover:bg-accent/50 transition-colors"
+              className="bg-card border border-border rounded-xl p-4 text-left active:opacity-70"
+              style={{ WebkitTapHighlightColor: "transparent" }}
             >
               <div className={`w-12 h-12 rounded-full ${item.iconBg} flex items-center justify-center mb-3`}>
                 <item.icon className={`w-6 h-6 ${item.iconColor}`} />
@@ -121,6 +121,7 @@ const HelpSupport = () => {
               <button
                 onClick={() => setOpenFaq(openFaq === index ? null : index)}
                 className="w-full flex items-center gap-3 p-4"
+                style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
                   <HelpCircle className="w-5 h-5 text-muted-foreground" />
@@ -142,7 +143,8 @@ const HelpSupport = () => {
       <div className="px-4 pb-6 mt-auto">
         <button
           onClick={() => window.open(whatsappChannel, "_blank")}
-          className="w-full flex items-center justify-center gap-2 py-4 bg-[#1a3a2a] rounded-xl text-white font-semibold text-base"
+          className="w-full flex items-center justify-center gap-2 py-4 bg-[#1a3a2a] rounded-xl text-white font-semibold text-base active:opacity-70"
+          style={{ WebkitTapHighlightColor: "transparent" }}
         >
           <Users className="w-5 h-5" />
           Join Our Community
