@@ -32,7 +32,7 @@ const Promo = () => {
       label: "About SmartPay",
       color: "bg-blue-100",
       iconColor: "text-blue-600",
-      onClick: () => setShowAbout(true),
+      onClick: () => navigate("/about-smartpay"),
     },
     {
       icon: Headphones,
