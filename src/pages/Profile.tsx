@@ -36,16 +36,7 @@ const Profile = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
-  const [showSecurity, setShowSecurity] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
-
-  // Security state
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showNewPass, setShowNewPass] = useState(false);
-  const [showConfirmPass, setShowConfirmPass] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -85,40 +76,13 @@ const Profile = () => {
     }
   };
 
-  const handleChangePassword = async () => {
-    if (!newPassword || !confirmPassword) {
-      toast({ title: "Error", description: "Please fill in both fields", variant: "destructive" });
-      return;
-    }
-    if (newPassword.length < 6) {
-      toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
-      return;
-    }
-
-    setChangingPassword(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setChangingPassword(false);
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Success", description: "Password changed successfully" });
-      setNewPassword("");
-      setConfirmPassword("");
-      setShowSecurity(false);
-    }
-  };
 
   const menuItems = [
     { icon: Settings, label: "Account Settings", onClick: () => setShowAccountSettings(true) },
     { icon: ShoppingCart, label: "Buy Promo Code", onClick: () => navigate("/buy-promo") },
-    { icon: Info, label: "About SmartPay", onClick: () => setShowAbout(true) },
+    { icon: Info, label: "About SmartPay", onClick: () => navigate("/about-smartpay") },
     { icon: MessageCircle, label: "Join WhatsApp Channel", onClick: () => window.open("https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40", "_blank") },
-    { icon: Shield, label: "Security", onClick: () => setShowSecurity(true) },
+    { icon: Shield, label: "Security", onClick: () => navigate("/security") },
     { icon: HelpCircle, label: "Help & Support", onClick: () => navigate("/help-support") },
   ];
 
