@@ -14,13 +14,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 
 interface ProfileData {
   username: string;
@@ -34,7 +27,7 @@ const Profile = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [showAccountSettings, setShowAccountSettings] = useState(false);
+  
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -149,31 +142,6 @@ const Profile = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={showAccountSettings} onOpenChange={setShowAccountSettings}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-green-primary">Account Settings</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Username</Label>
-              <div className="p-3 bg-muted rounded-lg text-foreground font-medium uppercase">{profile?.username || "User"}</div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Email</Label>
-              <div className="p-3 bg-muted rounded-lg text-foreground font-medium">{email}</div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Account Status</Label>
-              <div className="p-3 bg-muted rounded-lg text-green-primary font-medium">Active ✅</div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Member Since</Label>
-              <div className="p-3 bg-muted rounded-lg text-foreground font-medium">2026</div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <BottomNav />
     </div>
