@@ -32,6 +32,7 @@ import ReportIssue from "./pages/ReportIssue";
 import AboutSmartPay from "./pages/AboutSmartPay";
 import Security from "./pages/Security";
 import AccountSettings from "./pages/AccountSettings";
+import GiftCard from "./pages/GiftCard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -96,6 +97,7 @@ const AppRoutes = () => {
       <Route path="/about-smartpay" element={session ? <AboutSmartPay /> : <Navigate to="/welcome" replace />} />
       <Route path="/security" element={session ? <Security /> : <Navigate to="/welcome" replace />} />
       <Route path="/account-settings" element={session ? <AccountSettings /> : <Navigate to="/welcome" replace />} />
+      <Route path="/giftcard" element={session ? <GiftCard /> : <Navigate to="/welcome" replace />} />
       <Route path="/admin-panel" element={<AdminPanel />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
