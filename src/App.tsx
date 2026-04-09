@@ -31,6 +31,7 @@ import LiveChat from "./pages/LiveChat";
 import ReportIssue from "./pages/ReportIssue";
 import AboutSmartPay from "./pages/AboutSmartPay";
 import Security from "./pages/Security";
+import AccountSettings from "./pages/AccountSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -94,6 +95,7 @@ const AppRoutes = () => {
       <Route path="/report-issue" element={session ? <ReportIssue /> : <Navigate to="/welcome" replace />} />
       <Route path="/about-smartpay" element={session ? <AboutSmartPay /> : <Navigate to="/welcome" replace />} />
       <Route path="/security" element={session ? <Security /> : <Navigate to="/welcome" replace />} />
+      <Route path="/account-settings" element={session ? <AccountSettings /> : <Navigate to="/welcome" replace />} />
       <Route path="/admin-panel" element={<AdminPanel />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />

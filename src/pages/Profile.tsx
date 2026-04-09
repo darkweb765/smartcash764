@@ -64,7 +64,7 @@ const Profile = () => {
   };
 
   const menuItems = [
-    { icon: Settings, label: "Account Settings", onClick: () => setShowAccountSettings(true) },
+    { icon: Settings, label: "Account Settings", onClick: () => navigate("/account-settings") },
     { icon: ShoppingCart, label: "Buy Promo Code", onClick: () => navigate("/buy-promo") },
     { icon: Info, label: "About SmartPay", onClick: () => navigate("/about-smartpay") },
     { icon: MessageCircle, label: "Join WhatsApp Channel", onClick: () => window.open("https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40", "_blank") },
