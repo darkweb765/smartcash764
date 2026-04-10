@@ -204,17 +204,20 @@ const AdminPanel = () => {
     }
   };
 
+  const handleClearError = async (codeId: string) => {
+    const res = await callAdmin("POST", "", { action: "clear_error", code_id: codeId });
+    if (res.success) {
+      setSuccessMsg("Error Cleared! User can now withdraw permanently.");
+      setConfirmDialog({ open: false, type: "", id: "", label: "" });
+      fetchData();
+    }
+  };
+
   const onConfirm = () => {
     if (confirmDialog.type === "verify") handleVerify(confirmDialog.id);
     else if (confirmDialog.type === "activate") handleActivate(confirmDialog.id);
     else if (confirmDialog.type === "approve") handleApproveWithdrawal(confirmDialog.id);
-  };
-
-  const handleCopyAcct = (purchase: Purchase) => {
-    const text = `Name: ${purchase.full_name}\nEmail: ${purchase.email}\nUsername: ${purchase.username}`;
-    navigator.clipboard.writeText(text);
-    setCopiedId(purchase.id);
-    setTimeout(() => setCopiedId(null), 2000);
+    else if (confirmDialog.type === "clear_error") handleClearError(confirmDialog.id);
   };
 
   // Chat functions
