@@ -478,31 +478,57 @@ const AdminPanel = () => {
                           <p className="text-xs text-muted-foreground mt-1">{formatDate(a.date)}</p>
                         </div>
                         <div className="flex-shrink-0 ml-2">
-                          {a.status === "done" || a.status === "approved" ? (
-                            <span className="text-sm text-muted-foreground font-medium">Done</span>
-                          ) : a.type === "activation" ? (
-                            <Button
-                              size="sm"
-                              onClick={() => setConfirmDialog({
-                                open: true, type: "activate", id: a.id,
-                                label: `Activate promo code for ${a.name}?`,
-                              })}
-                              className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-1.5 text-xs font-semibold"
-                            >
-                              Activate
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              onClick={() => setConfirmDialog({
-                                open: true, type: "approve", id: a.id,
-                                label: `Approve withdrawal for ${a.name}?`,
-                              })}
-                              className="bg-green-primary hover:bg-green-primary/90 text-white rounded-lg px-4 py-1.5 text-xs font-semibold"
-                            >
-                              Approve
-                            </Button>
-                          )}
+                          {(() => {
+                            const stage = a.withdrawal_stage;
+                            // Show "Done" for completed stages
+                            if (stage === "completed" || stage === "cleared") {
+                              return <span className="text-sm text-green-600 font-medium">✅ Done</span>;
+                            }
+                            // Activation type: show Activate button if not yet activated
+                            if (a.type === "activation" && a.status === "pending") {
+                              return (
+                                <Button size="sm"
+                                  onClick={() => setConfirmDialog({
+                                    open: true, type: "activate", id: a.id,
+                                    label: `Activate promo code for ${a.name}?`,
+                                  })}
+                                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-1.5 text-xs font-semibold">
+                                  Activate
+                                </Button>
+                              );
+                            }
+                            // Withdrawal type with needs_clearing stage
+                            if (a.type === "withdrawal" && stage === "needs_clearing") {
+                              return (
+                                <Button size="sm"
+                                  onClick={() => setConfirmDialog({
+                                    open: true, type: "clear_error", id: a.code_id || a.id,
+                                    label: `Clear error for ${a.name}? This will allow permanent withdrawal.`,
+                                  })}
+                                  className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-4 py-1.5 text-xs font-semibold">
+                                  Clear Error
+                                </Button>
+                              );
+                            }
+                            // Withdrawal type with needs_approval stage
+                            if (a.type === "withdrawal" && (stage === "needs_approval" || a.status === "pending")) {
+                              return (
+                                <Button size="sm"
+                                  onClick={() => setConfirmDialog({
+                                    open: true, type: "approve", id: a.id,
+                                    label: `Approve withdrawal for ${a.name}?`,
+                                  })}
+                                  className="bg-green-primary hover:bg-green-primary/90 text-white rounded-lg px-4 py-1.5 text-xs font-semibold">
+                                  Approve
+                                </Button>
+                              );
+                            }
+                            // Default done state
+                            if (a.status === "done" || a.status === "approved") {
+                              return <span className="text-sm text-muted-foreground font-medium">Done</span>;
+                            }
+                            return null;
+                          })()}
                         </div>
                       </div>
                     </div>
