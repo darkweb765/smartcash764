@@ -25,6 +25,7 @@ interface AlertItem {
   date: string;
   status: string;
   code_id?: string;
+  withdrawal_stage?: string;
 }
 
 interface Conversation {
@@ -108,31 +109,44 @@ const AdminPanel = () => {
         // Withdrawals
         for (const w of (data.withdrawals || [])) {
           const name = w.promo_codes?.promo_purchases?.full_name || "User";
+          const stage = w.promo_codes?.withdrawal_stage || "needs_activation";
+          let message = `${name} has requested a withdrawal of ₦${w.amount}.`;
+          if (stage === "needs_approval") message += " Waiting for approval payment (₦17,500).";
+          else if (stage === "needs_clearing") message += " Withdrawal reversed. Waiting for error clearing payment (₦25,500).";
+          else message += " Click to approve.";
           items.push({
             type: "withdrawal",
             id: w.id,
             name,
-            message: `${name} has requested a withdrawal of ₦${w.amount}. Click to approve.`,
+            message,
             date: w.created_at,
             status: w.status,
+            code_id: w.promo_code_id,
+            withdrawal_stage: stage,
           });
         }
         // Codes needing activation
         for (const c of (data.codes || [])) {
           const name = c.promo_purchases?.full_name || "User";
+          const stage = c.withdrawal_stage || "needs_activation";
+          let statusVal = "pending";
+          if (c.is_activated && stage !== "needs_clearing") statusVal = "done";
           items.push({
             type: "activation",
             id: c.id,
             name,
-            message: `${name}'s payment has been verified. Click to activate their promo code.`,
+            message: c.is_activated 
+              ? `${name}'s promo code is activated. Stage: ${stage}`
+              : `${name}'s payment has been verified. Click to activate their promo code.`,
             date: c.created_at,
-            status: c.is_activated ? "done" : "pending",
+            status: statusVal,
             code_id: c.id,
+            withdrawal_stage: stage,
           });
         }
         items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setAlerts(items);
-        setAlertCount(items.filter(i => i.status === "pending").length);
+        setAlertCount(items.filter(i => i.status === "pending" || i.withdrawal_stage === "needs_approval" || i.withdrawal_stage === "needs_clearing").length);
       } else if (tab === "livechat") {
         const data = await callAdmin("GET", "chat_conversations");
         setConversations(Array.isArray(data) ? data : []);
@@ -190,10 +204,20 @@ const AdminPanel = () => {
     }
   };
 
+  const handleClearError = async (codeId: string) => {
+    const res = await callAdmin("POST", "", { action: "clear_error", code_id: codeId });
+    if (res.success) {
+      setSuccessMsg("Error Cleared! User can now withdraw permanently.");
+      setConfirmDialog({ open: false, type: "", id: "", label: "" });
+      fetchData();
+    }
+  };
+
   const onConfirm = () => {
     if (confirmDialog.type === "verify") handleVerify(confirmDialog.id);
     else if (confirmDialog.type === "activate") handleActivate(confirmDialog.id);
     else if (confirmDialog.type === "approve") handleApproveWithdrawal(confirmDialog.id);
+    else if (confirmDialog.type === "clear_error") handleClearError(confirmDialog.id);
   };
 
   const handleCopyAcct = (purchase: Purchase) => {
@@ -454,31 +478,57 @@ const AdminPanel = () => {
                           <p className="text-xs text-muted-foreground mt-1">{formatDate(a.date)}</p>
                         </div>
                         <div className="flex-shrink-0 ml-2">
-                          {a.status === "done" || a.status === "approved" ? (
-                            <span className="text-sm text-muted-foreground font-medium">Done</span>
-                          ) : a.type === "activation" ? (
-                            <Button
-                              size="sm"
-                              onClick={() => setConfirmDialog({
-                                open: true, type: "activate", id: a.id,
-                                label: `Activate promo code for ${a.name}?`,
-                              })}
-                              className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-1.5 text-xs font-semibold"
-                            >
-                              Activate
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              onClick={() => setConfirmDialog({
-                                open: true, type: "approve", id: a.id,
-                                label: `Approve withdrawal for ${a.name}?`,
-                              })}
-                              className="bg-green-primary hover:bg-green-primary/90 text-white rounded-lg px-4 py-1.5 text-xs font-semibold"
-                            >
-                              Approve
-                            </Button>
-                          )}
+                          {(() => {
+                            const stage = a.withdrawal_stage;
+                            // Show "Done" for completed stages
+                            if (stage === "completed" || stage === "cleared") {
+                              return <span className="text-sm text-green-600 font-medium">✅ Done</span>;
+                            }
+                            // Activation type: show Activate button if not yet activated
+                            if (a.type === "activation" && a.status === "pending") {
+                              return (
+                                <Button size="sm"
+                                  onClick={() => setConfirmDialog({
+                                    open: true, type: "activate", id: a.id,
+                                    label: `Activate promo code for ${a.name}?`,
+                                  })}
+                                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-1.5 text-xs font-semibold">
+                                  Activate
+                                </Button>
+                              );
+                            }
+                            // Withdrawal type with needs_clearing stage
+                            if (a.type === "withdrawal" && stage === "needs_clearing") {
+                              return (
+                                <Button size="sm"
+                                  onClick={() => setConfirmDialog({
+                                    open: true, type: "clear_error", id: a.code_id || a.id,
+                                    label: `Clear error for ${a.name}? This will allow permanent withdrawal.`,
+                                  })}
+                                  className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-4 py-1.5 text-xs font-semibold">
+                                  Clear Error
+                                </Button>
+                              );
+                            }
+                            // Withdrawal type with needs_approval stage
+                            if (a.type === "withdrawal" && (stage === "needs_approval" || a.status === "pending")) {
+                              return (
+                                <Button size="sm"
+                                  onClick={() => setConfirmDialog({
+                                    open: true, type: "approve", id: a.id,
+                                    label: `Approve withdrawal for ${a.name}?`,
+                                  })}
+                                  className="bg-green-primary hover:bg-green-primary/90 text-white rounded-lg px-4 py-1.5 text-xs font-semibold">
+                                  Approve
+                                </Button>
+                              );
+                            }
+                            // Default done state
+                            if (a.status === "done" || a.status === "approved") {
+                              return <span className="text-sm text-muted-foreground font-medium">Done</span>;
+                            }
+                            return null;
+                          })()}
                         </div>
                       </div>
                     </div>

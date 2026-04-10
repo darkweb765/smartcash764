@@ -76,6 +76,7 @@ export type Database = {
           is_activated: boolean
           purchase_id: string | null
           user_id: string
+          withdrawal_stage: string
         }
         Insert: {
           code: string
@@ -84,6 +85,7 @@ export type Database = {
           is_activated?: boolean
           purchase_id?: string | null
           user_id: string
+          withdrawal_stage?: string
         }
         Update: {
           code?: string
@@ -92,6 +94,7 @@ export type Database = {
           is_activated?: boolean
           purchase_id?: string | null
           user_id?: string
+          withdrawal_stage?: string
         }
         Relationships: [
           {
