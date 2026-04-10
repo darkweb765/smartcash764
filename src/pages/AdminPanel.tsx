@@ -25,6 +25,7 @@ interface AlertItem {
   date: string;
   status: string;
   code_id?: string;
+  withdrawal_stage?: string;
 }
 
 interface Conversation {
