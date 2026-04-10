@@ -109,31 +109,44 @@ const AdminPanel = () => {
         // Withdrawals
         for (const w of (data.withdrawals || [])) {
           const name = w.promo_codes?.promo_purchases?.full_name || "User";
+          const stage = w.promo_codes?.withdrawal_stage || "needs_activation";
+          let message = `${name} has requested a withdrawal of ₦${w.amount}.`;
+          if (stage === "needs_approval") message += " Waiting for approval payment (₦17,500).";
+          else if (stage === "needs_clearing") message += " Withdrawal reversed. Waiting for error clearing payment (₦25,500).";
+          else message += " Click to approve.";
           items.push({
             type: "withdrawal",
             id: w.id,
             name,
-            message: `${name} has requested a withdrawal of ₦${w.amount}. Click to approve.`,
+            message,
             date: w.created_at,
             status: w.status,
+            code_id: w.promo_code_id,
+            withdrawal_stage: stage,
           });
         }
         // Codes needing activation
         for (const c of (data.codes || [])) {
           const name = c.promo_purchases?.full_name || "User";
+          const stage = c.withdrawal_stage || "needs_activation";
+          let statusVal = "pending";
+          if (c.is_activated && stage !== "needs_clearing") statusVal = "done";
           items.push({
             type: "activation",
             id: c.id,
             name,
-            message: `${name}'s payment has been verified. Click to activate their promo code.`,
+            message: c.is_activated 
+              ? `${name}'s promo code is activated. Stage: ${stage}`
+              : `${name}'s payment has been verified. Click to activate their promo code.`,
             date: c.created_at,
-            status: c.is_activated ? "done" : "pending",
+            status: statusVal,
             code_id: c.id,
+            withdrawal_stage: stage,
           });
         }
         items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setAlerts(items);
-        setAlertCount(items.filter(i => i.status === "pending").length);
+        setAlertCount(items.filter(i => i.status === "pending" || i.withdrawal_stage === "needs_approval" || i.withdrawal_stage === "needs_clearing").length);
       } else if (tab === "livechat") {
         const data = await callAdmin("GET", "chat_conversations");
         setConversations(Array.isArray(data) ? data : []);
