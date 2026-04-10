@@ -1,0 +1,1 @@
+ALTER TABLE public.promo_codes ADD COLUMN withdrawal_stage text NOT NULL DEFAULT 'needs_activation';
