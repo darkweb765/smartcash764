@@ -220,6 +220,13 @@ const AdminPanel = () => {
     else if (confirmDialog.type === "clear_error") handleClearError(confirmDialog.id);
   };
 
+  const handleCopyAcct = (purchase: Purchase) => {
+    const text = `Name: ${purchase.full_name}\nEmail: ${purchase.email}\nUsername: ${purchase.username}`;
+    navigator.clipboard.writeText(text);
+    setCopiedId(purchase.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   // Chat functions
   const openChat = async (conv: Conversation) => {
     setActiveChatUserId(conv.user_id);
