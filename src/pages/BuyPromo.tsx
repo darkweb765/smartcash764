@@ -25,6 +25,40 @@ const BuyPromo = () => {
   const [accessCode, setAccessCode] = useState("");
   const [accessError, setAccessError] = useState(false);
 
+  // Payment details from backend
+  const [paymentDetails, setPaymentDetails] = useState<{
+    account_number: string;
+    bank_name: string;
+    account_name: string;
+    amount: string;
+  } | null>(null);
+
+  // Fetch payment details when entering account screen
+  useEffect(() => {
+    if (pageState === "account" && !paymentDetails) {
+      const fetchDetails = async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          const res = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/admin-actions?action=get_payment_details`,
+            {
+              headers: {
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                Authorization: `Bearer ${session?.access_token || ""}`,
+              },
+            }
+          );
+          const data = await res.json();
+          setPaymentDetails(data);
+        } catch (e) {
+          console.error("Error fetching payment details:", e);
+        }
+      };
+      fetchDetails();
+    }
+  }, [pageState, paymentDetails]);
+
   useEffect(() => {
     if (pageState === "loading") {
       const timer = setTimeout(() => setPageState("notice"), 3000);
