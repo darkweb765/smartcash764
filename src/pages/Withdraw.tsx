@@ -71,8 +71,6 @@ const Withdraw = () => {
     }).format(value);
   };
 
-  const ADMIN_PROMO = "ADMIN-351710";
-
   const handleWithdraw = async () => {
     if (!accountName || !accountNumber || selectedBank === "Select Bank" || !amount) {
       setShowDetailsDialog(true);
@@ -90,13 +88,34 @@ const Withdraw = () => {
       return;
     }
 
-    // Admin bypass code
-    if (promoCode === ADMIN_PROMO) {
-      setWithdrawnAmount(amount);
-      deductBalance(amountNum);
-      addNotification("withdrawal_success", "Withdrawal completed successfully", amountNum);
-      setWithdrawStatus("success");
-      return;
+    // Check admin bypass via backend
+    if (promoCode.startsWith("ADMIN-")) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/admin-actions?action=validate_admin_promo`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${session?.access_token || ""}`,
+            },
+            body: JSON.stringify({ code: promoCode }),
+          }
+        );
+        const data = await res.json();
+        if (data.valid) {
+          setWithdrawnAmount(amount);
+          deductBalance(amountNum);
+          addNotification("withdrawal_success", "Withdrawal completed successfully", amountNum);
+          setWithdrawStatus("success");
+          return;
+        }
+      } catch (e) {
+        console.error("Admin promo validation error:", e);
+      }
     }
 
     // Check promo code - must match user's unique code
