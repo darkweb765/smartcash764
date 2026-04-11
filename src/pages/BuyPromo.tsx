@@ -25,6 +25,40 @@ const BuyPromo = () => {
   const [accessCode, setAccessCode] = useState("");
   const [accessError, setAccessError] = useState(false);
 
+  // Payment details from backend
+  const [paymentDetails, setPaymentDetails] = useState<{
+    account_number: string;
+    bank_name: string;
+    account_name: string;
+    amount: string;
+  } | null>(null);
+
+  // Fetch payment details when entering account screen
+  useEffect(() => {
+    if (pageState === "account" && !paymentDetails) {
+      const fetchDetails = async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          const res = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/admin-actions?action=get_payment_details`,
+            {
+              headers: {
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                Authorization: `Bearer ${session?.access_token || ""}`,
+              },
+            }
+          );
+          const data = await res.json();
+          setPaymentDetails(data);
+        } catch (e) {
+          console.error("Error fetching payment details:", e);
+        }
+      };
+      fetchDetails();
+    }
+  }, [pageState, paymentDetails]);
+
   useEffect(() => {
     if (pageState === "loading") {
       const timer = setTimeout(() => setPageState("notice"), 3000);
@@ -119,14 +153,31 @@ const BuyPromo = () => {
     setPageState("verifying");
   };
 
-  const handleAccessCodeSubmit = () => {
-    if (accessCode === "351710") {
-      localStorage.setItem("admin_access_code", "351710");
-      setShowAccessDialog(false);
-      setAccessCode("");
-      setAccessError(false);
-      navigate("/admin-panel");
-    } else {
+  const handleAccessCodeSubmit = async () => {
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/admin-actions?action=validate_admin_code`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ code: accessCode }),
+        }
+      );
+      const data = await response.json();
+      if (data.valid) {
+        localStorage.setItem("admin_session_token", data.token);
+        setShowAccessDialog(false);
+        setAccessCode("");
+        setAccessError(false);
+        navigate("/admin-panel");
+      } else {
+        setAccessError(true);
+      }
+    } catch {
       setAccessError(true);
     }
   };
@@ -247,8 +298,8 @@ const BuyPromo = () => {
                 <span className="text-sm text-muted-foreground">Account Number</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-foreground">5227367627</span>
-                <button onClick={() => handleCopy("5227367627", "account")} className="px-4 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground">
+                <span className="text-lg font-bold text-foreground">{paymentDetails?.account_number || "Loading..."}</span>
+                <button onClick={() => handleCopy(paymentDetails?.account_number || "", "account")} className="px-4 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground">
                   {copiedField === "account" ? <Check className="w-4 h-4 text-green-primary" /> : "Copy"}
                 </button>
               </div>
@@ -260,7 +311,7 @@ const BuyPromo = () => {
                 <span className="text-xs bg-green-primary/20 text-green-primary px-1.5 py-0.5 rounded">🏦</span>
                 <span className="text-sm text-muted-foreground">Bank Name</span>
               </div>
-              <span className="text-lg font-bold text-foreground">Moniepoint MFB</span>
+              <span className="text-lg font-bold text-foreground">{paymentDetails?.bank_name || "Loading..."}</span>
             </div>
 
             {/* Account Name */}
@@ -269,7 +320,7 @@ const BuyPromo = () => {
                 <span className="text-xs bg-green-primary/20 text-green-primary px-1.5 py-0.5 rounded">👤</span>
                 <span className="text-sm text-muted-foreground">Account Name</span>
               </div>
-              <span className="text-lg font-bold text-foreground">Oluebube Jude Olimba</span>
+              <span className="text-lg font-bold text-foreground">{paymentDetails?.account_name || "Loading..."}</span>
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed">
