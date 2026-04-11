@@ -4,7 +4,7 @@ import { ArrowLeft, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { verifyServiceCode } from "@/utils/verifyCode";
 import {
   Select,
   SelectContent,
@@ -34,32 +34,14 @@ const Airtime = () => {
 
   const handleVerifyCode = async () => {
     setVerifying(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/admin-actions?action=verify_service_code`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${session?.access_token || ""}`,
-          },
-          body: JSON.stringify({ code }),
-        }
-      );
-      const data = await res.json();
-      if (data.valid) {
-        setShowCodeDialog(false);
-        setShowSuccess(true);
-        setCode("");
-        setCodeError("");
-      } else {
-        setCodeError("Incorrect code. Please try again.");
-      }
-    } catch {
-      setCodeError("Verification failed. Please try again.");
+    const valid = await verifyServiceCode(code);
+    if (valid) {
+      setShowCodeDialog(false);
+      setShowSuccess(true);
+      setCode("");
+      setCodeError("");
+    } else {
+      setCodeError("Incorrect code. Please try again.");
     }
     setVerifying(false);
   };
