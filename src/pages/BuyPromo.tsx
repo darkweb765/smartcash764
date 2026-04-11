@@ -155,11 +155,6 @@ const BuyPromo = () => {
 
   const handleAccessCodeSubmit = async () => {
     try {
-      const res = await supabase.functions.invoke("admin-actions", {
-        body: { code: accessCode },
-        headers: { "Content-Type": "application/json" },
-      });
-      // Handle the response from the edge function
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/admin-actions?action=validate_admin_code`,
