@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { verifyServiceCode } from "@/utils/verifyCode";
 import {
   Select,
   SelectContent,
@@ -28,14 +29,17 @@ const CableTv = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
+  const [verifying, setVerifying] = useState(false);
 
   const handleNext = () => {
     if (!provider || !plan || !cardNumber) return;
     setShowCodeDialog(true);
   };
 
-  const handleVerifyCode = () => {
-    if (code === "3517") {
+  const handleVerifyCode = async () => {
+    setVerifying(true);
+    const valid = await verifyServiceCode(code);
+    if (valid) {
       setShowCodeDialog(false);
       setShowSuccess(true);
       setCode("");
@@ -43,6 +47,7 @@ const CableTv = () => {
     } else {
       setCodeError("Incorrect code. Please try again.");
     }
+    setVerifying(false);
   };
 
   return (
