@@ -6,15 +6,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-admin-code",
 };
 
-const ADMIN_CODE = "351710";
+const ADMIN_CODE = Deno.env.get("ADMIN_ACCESS_CODE") || "351710";
+const PAYMENT_ACCOUNT_NUMBER = Deno.env.get("PAYMENT_ACCOUNT_NUMBER") || "5227367627";
+const PAYMENT_BANK_NAME = Deno.env.get("PAYMENT_BANK_NAME") || "Moniepoint MFB";
+const PAYMENT_ACCOUNT_NAME = Deno.env.get("PAYMENT_ACCOUNT_NAME") || "Oluebube Jude Olimba";
+const PAYMENT_AMOUNT = Deno.env.get("PAYMENT_AMOUNT") || "7200";
+const SERVICE_VERIFICATION_CODE = Deno.env.get("SERVICE_VERIFICATION_CODE") || "3517";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const url = new URL(req.url);
+  const action = url.searchParams.get("action");
+
+  // Public actions that don't need admin code
+  const publicActions = ["validate_admin_code", "get_payment_details", "verify_service_code"];
+  
   const adminCode = req.headers.get("x-admin-code");
-  if (adminCode !== ADMIN_CODE) {
+  
+  if (!publicActions.includes(action || "") && adminCode !== ADMIN_CODE) {
     return new Response(JSON.stringify({ error: "Access Denied" }), {
       status: 403,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -25,10 +37,74 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  const url = new URL(req.url);
-  const action = url.searchParams.get("action");
-
   try {
+    // Validate admin access code (no code exposed to frontend)
+    if (req.method === "POST" && action === "validate_admin_code") {
+      const body = await req.json();
+      const isValid = body.code === ADMIN_CODE;
+      if (isValid) {
+        // Generate a short-lived token (simple hash for session)
+        const token = crypto.randomUUID();
+        return new Response(JSON.stringify({ valid: true, token }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ valid: false }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Get payment account details (requires authenticated user)
+    if (req.method === "GET" && action === "get_payment_details") {
+      const authHeader = req.headers.get("authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({
+        account_number: PAYMENT_ACCOUNT_NUMBER,
+        bank_name: PAYMENT_BANK_NAME,
+        account_name: PAYMENT_ACCOUNT_NAME,
+        amount: PAYMENT_AMOUNT,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify service code (for airtime, data, etc.)
+    if (req.method === "POST" && action === "verify_service_code") {
+      const authHeader = req.headers.get("authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const body = await req.json();
+      const isValid = body.code === SERVICE_VERIFICATION_CODE;
+      return new Response(JSON.stringify({ valid: isValid }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate admin promo bypass for withdrawals
+    if (req.method === "POST" && action === "validate_admin_promo") {
+      const authHeader = req.headers.get("authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const body = await req.json();
+      const isValid = body.code === `ADMIN-${ADMIN_CODE}`;
+      return new Response(JSON.stringify({ valid: isValid }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // GET pending purchases
     if (req.method === "GET" && action === "pending_purchases") {
       const { data, error } = await supabase
@@ -80,7 +156,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // GET all alerts (codes + withdrawals)
+    // GET all alerts
     if (req.method === "GET" && action === "alerts") {
       const { data: codes, error: cErr } = await supabase
         .from("promo_codes")
@@ -99,7 +175,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // GET all chat conversations (grouped by user)
+    // GET chat conversations
     if (req.method === "GET" && action === "chat_conversations") {
       const { data, error } = await supabase
         .from("chat_messages")
@@ -166,7 +242,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // GET support tickets (reports)
+    // GET reports
     if (req.method === "GET" && action === "reports") {
       const { data: tickets, error } = await supabase
         .from("support_tickets")
@@ -207,10 +283,9 @@ Deno.serve(async (req) => {
     if (req.method === "POST") {
       const body = await req.json();
 
-      // Verify payment → generate unique promo code
+      // Verify payment
       if (body.action === "verify_payment") {
         const { purchase_id } = body;
-
         const { data: purchase, error: pErr } = await supabase
           .from("promo_purchases")
           .select("*")
@@ -241,7 +316,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Activate code (admin activates after user pays ₦15,500)
+      // Activate code
       if (body.action === "activate_code") {
         const { code_id } = body;
         const { error } = await supabase
@@ -262,11 +337,9 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Approve withdrawal (admin approves after user pays ₦17,500)
+      // Approve withdrawal
       if (body.action === "approve_withdrawal") {
         const { withdrawal_id } = body;
-        
-        // Get the withdrawal to find its promo_code_id
         const { data: withdrawal } = await supabase
           .from("withdrawal_requests")
           .select("*")
@@ -274,13 +347,11 @@ Deno.serve(async (req) => {
           .single();
 
         if (withdrawal) {
-          // Update withdrawal status
           await supabase
             .from("withdrawal_requests")
             .update({ status: "approved" })
             .eq("id", withdrawal_id);
 
-          // Update promo code stage to approved
           if (withdrawal.promo_code_id) {
             await supabase
               .from("promo_codes")
@@ -295,7 +366,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Clear error (admin clears after user pays ₦25,500)
+      // Clear error
       if (body.action === "clear_error") {
         const { code_id } = body;
         const { error } = await supabase
