@@ -79,7 +79,7 @@ const AdminPanel = () => {
   const [successMsg, setSuccessMsg] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const adminCode = localStorage.getItem("admin_access_code");
+  const adminCode = localStorage.getItem("admin_session_token");
 
   const callAdmin = async (method: string, action: string, body?: any, extraParams?: string) => {
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
