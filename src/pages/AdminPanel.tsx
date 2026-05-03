@@ -289,12 +289,41 @@ const AdminPanel = () => {
     return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   };
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: "users", label: "Users" },
-    { key: "alerts", label: "Alerts" },
-    { key: "livechat", label: "Live Chat" },
-    { key: "reports", label: "Reports" },
+  const tabs: { key: Tab; label: string; icon: any }[] = [
+    { key: "users", label: "Users", icon: Users },
+    { key: "alerts", label: "Alerts", icon: Bell },
+    { key: "livechat", label: "Live Chat", icon: MessageCircle },
+    { key: "reports", label: "Reports", icon: FileText },
   ];
+
+  const q = search.trim().toLowerCase();
+  const filteredPurchases = q
+    ? purchases.filter(p =>
+        p.full_name?.toLowerCase().includes(q) ||
+        p.email?.toLowerCase().includes(q) ||
+        p.username?.toLowerCase().includes(q))
+    : purchases;
+  const filteredAlerts = q
+    ? alerts.filter(a => a.name?.toLowerCase().includes(q) || a.message?.toLowerCase().includes(q))
+    : alerts;
+  const filteredConversations = q
+    ? conversations.filter(c =>
+        c.username?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.last_message?.toLowerCase().includes(q))
+    : conversations;
+  const filteredReports = q
+    ? reports.filter(r =>
+        r.username?.toLowerCase().includes(q) ||
+        r.email?.toLowerCase().includes(q) ||
+        r.message?.toLowerCase().includes(q))
+    : reports;
+
+  const stats = {
+    totalUsers: purchases.length,
+    verifiedUsers: purchases.filter(p => p.status === "verified").length,
+    pendingAlerts: alertCount,
+  };
 
   // Chat detail view
   if (activeChatUserId) {
