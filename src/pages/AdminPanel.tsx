@@ -79,6 +79,7 @@ const AdminPanel = () => {
   });
   const [successMsg, setSuccessMsg] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const adminCode = localStorage.getItem("admin_session_token");
 
