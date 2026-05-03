@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Copy, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle, Copy, Send, Search, RefreshCw, Shield, Users, Bell, MessageCircle, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "users" | "alerts" | "livechat" | "reports";
@@ -78,6 +79,7 @@ const AdminPanel = () => {
   });
   const [successMsg, setSuccessMsg] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const adminCode = localStorage.getItem("admin_session_token");
 
@@ -287,12 +289,41 @@ const AdminPanel = () => {
     return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   };
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: "users", label: "Users" },
-    { key: "alerts", label: "Alerts" },
-    { key: "livechat", label: "Live Chat" },
-    { key: "reports", label: "Reports" },
+  const tabs: { key: Tab; label: string; icon: any }[] = [
+    { key: "users", label: "Users", icon: Users },
+    { key: "alerts", label: "Alerts", icon: Bell },
+    { key: "livechat", label: "Live Chat", icon: MessageCircle },
+    { key: "reports", label: "Reports", icon: FileText },
   ];
+
+  const q = search.trim().toLowerCase();
+  const filteredPurchases = q
+    ? purchases.filter(p =>
+        p.full_name?.toLowerCase().includes(q) ||
+        p.email?.toLowerCase().includes(q) ||
+        p.username?.toLowerCase().includes(q))
+    : purchases;
+  const filteredAlerts = q
+    ? alerts.filter(a => a.name?.toLowerCase().includes(q) || a.message?.toLowerCase().includes(q))
+    : alerts;
+  const filteredConversations = q
+    ? conversations.filter(c =>
+        c.username?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.last_message?.toLowerCase().includes(q))
+    : conversations;
+  const filteredReports = q
+    ? reports.filter(r =>
+        r.username?.toLowerCase().includes(q) ||
+        r.email?.toLowerCase().includes(q) ||
+        r.message?.toLowerCase().includes(q))
+    : reports;
+
+  const stats = {
+    totalUsers: purchases.length,
+    verifiedUsers: purchases.filter(p => p.status === "verified").length,
+    pendingAlerts: alertCount,
+  };
 
   // Chat detail view
   if (activeChatUserId) {
@@ -357,33 +388,97 @@ const AdminPanel = () => {
   return (
     <div className="min-h-screen bg-[#f0f0eb] max-w-md mx-auto">
       {/* Header */}
-      <div className="bg-[#2d4a3e] text-white px-4 py-5">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-6 h-6" />
+      <div className="bg-[#2d4a3e] text-white px-4 pt-4 pb-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} aria-label="Back">
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <Shield className="w-4 h-4 text-green-300" />
+                <span className="text-lg font-bold leading-none">Admin Panel</span>
+              </div>
+              <p className="text-[11px] text-white/70 mt-1">SmartPay · Secure session</p>
+            </div>
+          </div>
+          <button
+            onClick={fetchData}
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            aria-label="Refresh"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
-          <span className="text-xl font-bold">Admin Panel</span>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-white/10 rounded-xl px-3 py-2">
+            <p className="text-[10px] text-white/70 uppercase tracking-wide">Users</p>
+            <p className="text-base font-bold mt-0.5">{stats.totalUsers}</p>
+          </div>
+          <div className="bg-white/10 rounded-xl px-3 py-2">
+            <p className="text-[10px] text-white/70 uppercase tracking-wide">Verified</p>
+            <p className="text-base font-bold mt-0.5">{stats.verifiedUsers}</p>
+          </div>
+          <div className="bg-white/10 rounded-xl px-3 py-2">
+            <p className="text-[10px] text-white/70 uppercase tracking-wide">Pending</p>
+            <p className="text-base font-bold mt-0.5 text-orange-300">{stats.pendingAlerts}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="px-4 pt-3 pb-2 bg-[#f0f0eb]">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={
+              tab === "users" ? "Search user by name, email or username" :
+              tab === "alerts" ? "Search alerts by name or message" :
+              tab === "livechat" ? "Search conversations" : "Search reports"
+            }
+            className="pl-9 pr-9 h-10 bg-white border-[#e0e0d8] rounded-xl text-sm"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full hover:bg-muted flex items-center justify-center"
+              aria-label="Clear"
+            >
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white border-b border-[#e0e0d8]">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex-1 py-3 text-sm font-semibold text-center relative transition-colors ${
-              tab === t.key ? "text-foreground border-b-2 border-green-primary" : "text-muted-foreground"
-            }`}
-          >
-            {t.label}
-            {t.key === "alerts" && alertCount > 0 && (
-              <span className="absolute -top-1 right-1/4 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                {alertCount > 99 ? "99+" : alertCount}
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="flex bg-white border-b border-[#e0e0d8] sticky top-0 z-10">
+        {tabs.map((t) => {
+          const Icon = t.icon;
+          const isActive = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex-1 py-2.5 text-xs font-semibold text-center relative transition-colors ${
+                isActive ? "text-foreground border-b-2 border-green-primary" : "text-muted-foreground border-b-2 border-transparent"
+              }`}
+            >
+              <div className="flex flex-col items-center gap-0.5">
+                <Icon className={`w-4 h-4 ${isActive ? "text-green-primary" : ""}`} />
+                <span>{t.label}</span>
+              </div>
+              {t.key === "alerts" && alertCount > 0 && (
+                <span className="absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
+                  {alertCount > 99 ? "99+" : alertCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Content */}
@@ -394,9 +489,9 @@ const AdminPanel = () => {
           <>
             {/* USERS TAB */}
             {tab === "users" && (
-              purchases.length === 0 ? (
+              filteredPurchases.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No users yet</div>
-              ) : purchases.map((p) => (
+              ) : filteredPurchases.map((p) => (
                 <div key={p.id} className="bg-white rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start gap-3">
                     <div className="w-11 h-11 rounded-full bg-[#c8d6cc] flex items-center justify-center text-[#2d4a3e] font-bold text-lg flex-shrink-0">
@@ -456,9 +551,9 @@ const AdminPanel = () => {
 
             {/* ALERTS TAB */}
             {tab === "alerts" && (
-              alerts.length === 0 ? (
+              filteredAlerts.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No alerts</div>
-              ) : alerts.map((a, idx) => (
+              ) : filteredAlerts.map((a, idx) => (
                 <div key={`${a.type}-${a.id}-${idx}`} className="bg-white rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start gap-3">
                     <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -539,9 +634,9 @@ const AdminPanel = () => {
 
             {/* LIVE CHAT TAB */}
             {tab === "livechat" && (
-              conversations.length === 0 ? (
+              filteredConversations.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No conversations</div>
-              ) : conversations.map((conv) => (
+              ) : filteredConversations.map((conv) => (
                 <button
                   key={conv.user_id}
                   onClick={() => openChat(conv)}
@@ -573,9 +668,9 @@ const AdminPanel = () => {
 
             {/* REPORTS TAB */}
             {tab === "reports" && (
-              reports.length === 0 ? (
+              filteredReports.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No reports</div>
-              ) : reports.map((r) => (
+              ) : filteredReports.map((r) => (
                 <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start gap-3">
                     <div className="w-11 h-11 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
