@@ -165,19 +165,45 @@ const AdminPanel = () => {
   useEffect(() => { fetchData(); }, [tab]);
 
   // Fetch alert count on mount
+  const refreshAlertCount = async () => {
+    try {
+      const data = await callAdmin("GET", "alerts");
+      const pending = [
+        ...(data.withdrawals || []).filter((w: any) => w.status === "pending"),
+        ...(data.codes || []).filter((c: any) => !c.is_activated),
+      ];
+      setAlertCount(pending.length);
+    } catch {}
+  };
+
   useEffect(() => {
-    const fetchAlertCount = async () => {
-      try {
-        const data = await callAdmin("GET", "alerts");
-        const pending = [
-          ...(data.withdrawals || []).filter((w: any) => w.status === "pending"),
-          ...(data.codes || []).filter((c: any) => !c.is_activated),
-        ];
-        setAlertCount(pending.length);
-      } catch {}
-    };
-    fetchAlertCount();
+    refreshAlertCount();
   }, []);
+
+  // Realtime: auto-refresh admin data when DB changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-panel-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "promo_purchases" }, () => {
+        if (tab === "users") fetchData();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "promo_codes" }, () => {
+        refreshAlertCount();
+        if (tab === "alerts") fetchData();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "withdrawal_requests" }, () => {
+        refreshAlertCount();
+        if (tab === "alerts") fetchData();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, () => {
+        if (tab === "reports") fetchData();
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, () => {
+        if (tab === "livechat" && !activeChatUserId) fetchData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [tab, activeChatUserId]);
 
   const handleVerify = async (id: string) => {
     const res = await callAdmin("POST", "", { action: "verify_payment", purchase_id: id });
