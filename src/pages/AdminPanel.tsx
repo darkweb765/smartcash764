@@ -489,9 +489,9 @@ const AdminPanel = () => {
           <>
             {/* USERS TAB */}
             {tab === "users" && (
-              purchases.length === 0 ? (
+              filteredPurchases.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No users yet</div>
-              ) : purchases.map((p) => (
+              ) : filteredPurchases.map((p) => (
                 <div key={p.id} className="bg-white rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start gap-3">
                     <div className="w-11 h-11 rounded-full bg-[#c8d6cc] flex items-center justify-center text-[#2d4a3e] font-bold text-lg flex-shrink-0">
@@ -551,9 +551,9 @@ const AdminPanel = () => {
 
             {/* ALERTS TAB */}
             {tab === "alerts" && (
-              alerts.length === 0 ? (
+              filteredAlerts.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No alerts</div>
-              ) : alerts.map((a, idx) => (
+              ) : filteredAlerts.map((a, idx) => (
                 <div key={`${a.type}-${a.id}-${idx}`} className="bg-white rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start gap-3">
                     <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -634,9 +634,9 @@ const AdminPanel = () => {
 
             {/* LIVE CHAT TAB */}
             {tab === "livechat" && (
-              conversations.length === 0 ? (
+              filteredConversations.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No conversations</div>
-              ) : conversations.map((conv) => (
+              ) : filteredConversations.map((conv) => (
                 <button
                   key={conv.user_id}
                   onClick={() => openChat(conv)}
@@ -668,9 +668,9 @@ const AdminPanel = () => {
 
             {/* REPORTS TAB */}
             {tab === "reports" && (
-              reports.length === 0 ? (
+              filteredReports.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No reports</div>
-              ) : reports.map((r) => (
+              ) : filteredReports.map((r) => (
                 <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start gap-3">
                     <div className="w-11 h-11 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
