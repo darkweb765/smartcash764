@@ -81,8 +81,6 @@ const AdminPanel = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const adminCode = localStorage.getItem("admin_session_token");
-
   const callAdmin = async (method: string, action: string, body?: any, extraParams?: string) => {
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
     const url = `https://${projectId}.supabase.co/functions/v1/admin-actions?action=${action}${extraParams || ""}`;
@@ -90,12 +88,17 @@ const AdminPanel = () => {
       method,
       headers: {
         "Content-Type": "application/json",
-        "x-admin-code": adminCode || "",
+        "x-admin-code": localStorage.getItem("admin_session_token") || "",
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
     };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(url, opts);
+    if (res.status === 403) {
+      localStorage.removeItem("admin_session_token");
+      navigate("/buy-promo");
+      return null;
+    }
     return res.json();
   };
 
