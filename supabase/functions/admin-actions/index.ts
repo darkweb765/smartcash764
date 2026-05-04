@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get payment account details (requires authenticated user)
+    // Get payment account details (requires authenticated user) — pulls live row from DB
     if (req.method === "GET" && action === "get_payment_details") {
       const authHeader = req.headers.get("authorization");
       if (!authHeader) {
@@ -64,11 +64,16 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      const { data } = await supabase
+        .from("payment_settings")
+        .select("*")
+        .eq("singleton", true)
+        .maybeSingle();
       return new Response(JSON.stringify({
-        account_number: PAYMENT_ACCOUNT_NUMBER,
-        bank_name: PAYMENT_BANK_NAME,
-        account_name: PAYMENT_ACCOUNT_NAME,
-        amount: PAYMENT_AMOUNT,
+        account_number: data?.account_number || PAYMENT_ACCOUNT_NUMBER,
+        bank_name: data?.bank_name || PAYMENT_BANK_NAME,
+        account_name: data?.account_name || PAYMENT_ACCOUNT_NAME,
+        amount: data?.amount || PAYMENT_AMOUNT,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -380,6 +385,36 @@ Deno.serve(async (req) => {
           JSON.stringify({ success: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+
+      // Update payment account details (admin)
+      if (body.action === "update_payment_details") {
+        const { account_number, account_name, bank_name, amount } = body;
+        const { data: existing } = await supabase
+          .from("payment_settings")
+          .select("id")
+          .eq("singleton", true)
+          .maybeSingle();
+        const payload: any = {};
+        if (account_number !== undefined) payload.account_number = account_number;
+        if (account_name !== undefined) payload.account_name = account_name;
+        if (bank_name !== undefined) payload.bank_name = bank_name;
+        if (amount !== undefined) payload.amount = amount;
+        if (existing) {
+          const { error } = await supabase.from("payment_settings").update(payload).eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("payment_settings").insert({
+            account_number: account_number || "",
+            account_name: account_name || "",
+            bank_name: bank_name || "",
+            amount: amount || "7200",
+          });
+          if (error) throw error;
+        }
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       // Admin send chat message

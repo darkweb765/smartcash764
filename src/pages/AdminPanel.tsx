@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Copy, Send, Search, RefreshCw, Shield, Users, Bell, MessageCircle, FileText, X } from "lucide-react";
+import { ArrowLeft, CheckCircle, Copy, Send, Search, RefreshCw, Shield, Users, Bell, MessageCircle, FileText, X, Wallet, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-type Tab = "users" | "alerts" | "livechat" | "reports";
+type Tab = "users" | "alerts" | "livechat" | "reports" | "account";
 
 interface Purchase {
   id: string;
@@ -58,6 +59,7 @@ interface Report {
 
 const AdminPanel = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [tab, setTab] = useState<Tab>("users");
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
@@ -323,7 +325,63 @@ const AdminPanel = () => {
     { key: "alerts", label: "Alerts", icon: Bell },
     { key: "livechat", label: "Live Chat", icon: MessageCircle },
     { key: "reports", label: "Reports", icon: FileText },
+    { key: "account", label: "Account", icon: Wallet },
   ];
+
+  // Account settings state
+  const [acctNumber, setAcctNumber] = useState("");
+  const [acctName, setAcctName] = useState("");
+  const [acctBank, setAcctBank] = useState("");
+  const [liveDetails, setLiveDetails] = useState<{ account_number: string; account_name: string; bank_name: string } | null>(null);
+  const [savingAcct, setSavingAcct] = useState(false);
+
+  const loadAccount = async () => {
+    const { data } = await supabase
+      .from("payment_settings")
+      .select("*")
+      .eq("singleton", true)
+      .maybeSingle();
+    if (data) {
+      setLiveDetails({ account_number: data.account_number, account_name: data.account_name, bank_name: data.bank_name });
+      setAcctNumber(data.account_number);
+      setAcctName(data.account_name);
+      setAcctBank(data.bank_name);
+    }
+  };
+
+  useEffect(() => { if (tab === "account") loadAccount(); }, [tab]);
+
+  // Realtime: keep account form/live in sync
+  useEffect(() => {
+    const ch = supabase
+      .channel("admin-payment-settings")
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_settings" }, () => {
+        loadAccount();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  const saveAccount = async () => {
+    if (!acctNumber.trim() || !acctName.trim() || !acctBank.trim()) {
+      toast({ title: "All fields required", variant: "destructive" });
+      return;
+    }
+    setSavingAcct(true);
+    const res = await callAdmin("POST", "", {
+      action: "update_payment_details",
+      account_number: acctNumber.trim(),
+      account_name: acctName.trim(),
+      bank_name: acctBank.trim(),
+    });
+    setSavingAcct(false);
+    if (res?.success) {
+      toast({ title: "Account updated", description: "Buy Promo Code page now shows the new details." });
+      loadAccount();
+    } else {
+      toast({ title: "Update failed", variant: "destructive" });
+    }
+  };
 
   const q = search.trim().toLowerCase();
   const filteredPurchases = q
@@ -725,6 +783,53 @@ const AdminPanel = () => {
                   </div>
                 </div>
               ))
+            )}
+
+            {/* ACCOUNT TAB */}
+            {tab === "account" && (
+              <div className="space-y-3">
+                <div className="bg-white rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wallet className="w-5 h-5 text-green-primary" />
+                    <h3 className="font-bold text-foreground text-base">Change Account Details</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    These details show on the Buy Promo Code page. Updates apply instantly to all users.
+                  </p>
+                </div>
+
+                {liveDetails && (
+                  <div className="bg-[#e8e8e0] rounded-2xl p-4">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold mb-2">Currently Live</p>
+                    <p className="text-sm text-foreground"><span className="text-muted-foreground">Account No:</span> <span className="font-bold">{liveDetails.account_number}</span></p>
+                    <p className="text-sm text-foreground"><span className="text-muted-foreground">Name:</span> <span className="font-bold uppercase">{liveDetails.account_name}</span></p>
+                    <p className="text-sm text-foreground"><span className="text-muted-foreground">Bank:</span> <span className="font-bold uppercase">{liveDetails.bank_name}</span></p>
+                  </div>
+                )}
+
+                <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
+                  <div>
+                    <label className="text-sm font-semibold text-foreground">Account Number</label>
+                    <Input value={acctNumber} onChange={(e) => setAcctNumber(e.target.value)} className="mt-2 bg-muted border-border h-11" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-foreground">Account Name</label>
+                    <Input value={acctName} onChange={(e) => setAcctName(e.target.value)} className="mt-2 bg-muted border-border h-11 uppercase" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-foreground">Bank Name</label>
+                    <Input value={acctBank} onChange={(e) => setAcctBank(e.target.value)} className="mt-2 bg-muted border-border h-11 uppercase" />
+                  </div>
+                  <Button
+                    onClick={saveAccount}
+                    disabled={savingAcct}
+                    className="w-full py-6 bg-[#2d4a3e] hover:bg-[#2d4a3e]/90 text-white font-bold rounded-xl"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {savingAcct ? "Saving..." : "Update Account"}
+                  </Button>
+                </div>
+              </div>
             )}
           </>
         )}
