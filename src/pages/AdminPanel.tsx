@@ -59,6 +59,7 @@ interface Report {
 
 const AdminPanel = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [tab, setTab] = useState<Tab>("users");
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
@@ -324,7 +325,63 @@ const AdminPanel = () => {
     { key: "alerts", label: "Alerts", icon: Bell },
     { key: "livechat", label: "Live Chat", icon: MessageCircle },
     { key: "reports", label: "Reports", icon: FileText },
+    { key: "account", label: "Account", icon: Wallet },
   ];
+
+  // Account settings state
+  const [acctNumber, setAcctNumber] = useState("");
+  const [acctName, setAcctName] = useState("");
+  const [acctBank, setAcctBank] = useState("");
+  const [liveDetails, setLiveDetails] = useState<{ account_number: string; account_name: string; bank_name: string } | null>(null);
+  const [savingAcct, setSavingAcct] = useState(false);
+
+  const loadAccount = async () => {
+    const { data } = await supabase
+      .from("payment_settings")
+      .select("*")
+      .eq("singleton", true)
+      .maybeSingle();
+    if (data) {
+      setLiveDetails({ account_number: data.account_number, account_name: data.account_name, bank_name: data.bank_name });
+      setAcctNumber(data.account_number);
+      setAcctName(data.account_name);
+      setAcctBank(data.bank_name);
+    }
+  };
+
+  useEffect(() => { if (tab === "account") loadAccount(); }, [tab]);
+
+  // Realtime: keep account form/live in sync
+  useEffect(() => {
+    const ch = supabase
+      .channel("admin-payment-settings")
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_settings" }, () => {
+        loadAccount();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  const saveAccount = async () => {
+    if (!acctNumber.trim() || !acctName.trim() || !acctBank.trim()) {
+      toast({ title: "All fields required", variant: "destructive" });
+      return;
+    }
+    setSavingAcct(true);
+    const res = await callAdmin("POST", "", {
+      action: "update_payment_details",
+      account_number: acctNumber.trim(),
+      account_name: acctName.trim(),
+      bank_name: acctBank.trim(),
+    });
+    setSavingAcct(false);
+    if (res?.success) {
+      toast({ title: "Account updated", description: "Buy Promo Code page now shows the new details." });
+      loadAccount();
+    } else {
+      toast({ title: "Update failed", variant: "destructive" });
+    }
+  };
 
   const q = search.trim().toLowerCase();
   const filteredPurchases = q
