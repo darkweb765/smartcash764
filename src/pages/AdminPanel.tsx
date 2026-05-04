@@ -831,6 +831,11 @@ const AdminPanel = () => {
                 </div>
               </div>
             )}
+          </>
+        )}
+      </div>
+
+      {/* Confirm Dialog */}
       <Dialog open={confirmDialog.open} onOpenChange={(o) => setConfirmDialog({ ...confirmDialog, open: o })}>
         <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden bg-white">
           <h2 className="text-lg font-semibold text-foreground mb-4">{confirmDialog.label}</h2>
