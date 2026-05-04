@@ -21,8 +21,9 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const action = url.searchParams.get("action");
 
-  // Public actions that don't need admin code
-  const publicActions = ["validate_admin_code", "get_payment_details", "verify_service_code"];
+  // Public actions that don't need an existing admin-panel session.
+  // Each action below still validates its own user auth/code before returning success.
+  const publicActions = ["validate_admin_code", "get_payment_details", "verify_service_code", "validate_admin_promo"];
   
   const adminCode = req.headers.get("x-admin-code");
   
