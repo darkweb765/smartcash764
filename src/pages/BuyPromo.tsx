@@ -169,7 +169,7 @@ const BuyPromo = () => {
       );
       const data = await response.json();
       if (data.valid) {
-        localStorage.setItem("admin_session_token", data.token);
+        localStorage.setItem("admin_session_token", accessCode);
         setShowAccessDialog(false);
         setAccessCode("");
         setAccessError(false);
