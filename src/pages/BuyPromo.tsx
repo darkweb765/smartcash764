@@ -34,30 +34,42 @@ const BuyPromo = () => {
   } | null>(null);
 
   // Fetch payment details when entering account screen
+  const fetchDetails = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/admin-actions?action=get_payment_details`,
+        {
+          headers: {
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${session?.access_token || ""}`,
+          },
+        }
+      );
+      const data = await res.json();
+      setPaymentDetails(data);
+    } catch (e) {
+      console.error("Error fetching payment details:", e);
+    }
+  };
+
   useEffect(() => {
     if (pageState === "account" && !paymentDetails) {
-      const fetchDetails = async () => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-          const res = await fetch(
-            `https://${projectId}.supabase.co/functions/v1/admin-actions?action=get_payment_details`,
-            {
-              headers: {
-                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                Authorization: `Bearer ${session?.access_token || ""}`,
-              },
-            }
-          );
-          const data = await res.json();
-          setPaymentDetails(data);
-        } catch (e) {
-          console.error("Error fetching payment details:", e);
-        }
-      };
       fetchDetails();
     }
   }, [pageState, paymentDetails]);
+
+  // Realtime: refresh details if admin updates them
+  useEffect(() => {
+    const ch = supabase
+      .channel("buy-promo-payment-settings")
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_settings" }, () => {
+        fetchDetails();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
 
   useEffect(() => {
     if (pageState === "loading") {
