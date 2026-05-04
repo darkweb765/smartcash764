@@ -784,11 +784,53 @@ const AdminPanel = () => {
                 </div>
               ))
             )}
-          </>
-        )}
-      </div>
 
-      {/* Confirm Dialog */}
+            {/* ACCOUNT TAB */}
+            {tab === "account" && (
+              <div className="space-y-3">
+                <div className="bg-white rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wallet className="w-5 h-5 text-green-primary" />
+                    <h3 className="font-bold text-foreground text-base">Change Account Details</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    These details show on the Buy Promo Code page. Updates apply instantly to all users.
+                  </p>
+                </div>
+
+                {liveDetails && (
+                  <div className="bg-[#e8e8e0] rounded-2xl p-4">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold mb-2">Currently Live</p>
+                    <p className="text-sm text-foreground"><span className="text-muted-foreground">Account No:</span> <span className="font-bold">{liveDetails.account_number}</span></p>
+                    <p className="text-sm text-foreground"><span className="text-muted-foreground">Name:</span> <span className="font-bold uppercase">{liveDetails.account_name}</span></p>
+                    <p className="text-sm text-foreground"><span className="text-muted-foreground">Bank:</span> <span className="font-bold uppercase">{liveDetails.bank_name}</span></p>
+                  </div>
+                )}
+
+                <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
+                  <div>
+                    <label className="text-sm font-semibold text-foreground">Account Number</label>
+                    <Input value={acctNumber} onChange={(e) => setAcctNumber(e.target.value)} className="mt-2 bg-muted border-border h-11" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-foreground">Account Name</label>
+                    <Input value={acctName} onChange={(e) => setAcctName(e.target.value)} className="mt-2 bg-muted border-border h-11 uppercase" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-foreground">Bank Name</label>
+                    <Input value={acctBank} onChange={(e) => setAcctBank(e.target.value)} className="mt-2 bg-muted border-border h-11 uppercase" />
+                  </div>
+                  <Button
+                    onClick={saveAccount}
+                    disabled={savingAcct}
+                    className="w-full py-6 bg-[#2d4a3e] hover:bg-[#2d4a3e]/90 text-white font-bold rounded-xl"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {savingAcct ? "Saving..." : "Update Account"}
+                  </Button>
+                </div>
+              </div>
+            )}
       <Dialog open={confirmDialog.open} onOpenChange={(o) => setConfirmDialog({ ...confirmDialog, open: o })}>
         <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden bg-white">
           <h2 className="text-lg font-semibold text-foreground mb-4">{confirmDialog.label}</h2>
