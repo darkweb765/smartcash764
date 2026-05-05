@@ -299,22 +299,44 @@ Deno.serve(async (req) => {
           .single();
         if (pErr) throw pErr;
 
-        const randomNum = Math.floor(1000 + Math.random() * 9000);
-        const code = `INST-${randomNum}-SP`;
+        // Check if user already has a code (prevent duplicate)
+        const { data: existingCode } = await supabase
+          .from("promo_codes")
+          .select("code")
+          .eq("user_id", purchase.user_id)
+          .maybeSingle();
+        if (existingCode) {
+          await supabase.from("promo_purchases").update({ status: "verified" }).eq("id", purchase_id);
+          return new Response(
+            JSON.stringify({ success: true, code: existingCode.code, user_id: purchase.user_id, duplicate: true }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
 
-        await supabase
-          .from("promo_purchases")
-          .update({ status: "verified" })
-          .eq("id", purchase_id);
+        // Generate unique code with retry
+        let code = "";
+        let attempts = 0;
+        while (attempts < 10) {
+          const randomNum = Math.floor(1000 + Math.random() * 9000);
+          code = `INST-${randomNum}-SP`;
+          const { error: insErr } = await supabase.from("promo_codes").insert({
+            user_id: purchase.user_id,
+            purchase_id: purchase_id,
+            code,
+            is_activated: false,
+            withdrawal_stage: "needs_activation",
+          });
+          if (!insErr) break;
+          if (insErr.code !== "23505") throw insErr; // not a unique violation
+          attempts++;
+          if (attempts >= 10) {
+            return new Response(JSON.stringify({ error: "This code already exists or has been used." }), {
+              status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
 
-        const { error: cErr } = await supabase.from("promo_codes").insert({
-          user_id: purchase.user_id,
-          purchase_id: purchase_id,
-          code: code,
-          is_activated: false,
-          withdrawal_stage: "needs_activation",
-        });
-        if (cErr) throw cErr;
+        await supabase.from("promo_purchases").update({ status: "verified" }).eq("id", purchase_id);
 
         return new Response(
           JSON.stringify({ success: true, code, user_id: purchase.user_id }),

@@ -8,7 +8,24 @@ import { useToast } from "@/hooks/use-toast";
 
 import { useAppContext } from "@/contexts/AppContext";
 
-type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "failed";
+type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "failed" | "confirmed";
+
+const CONFIRMED_KEY = "smartpay_payment_confirmed";
+const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+
+interface ConfirmedRecord { code: string; at: number; }
+const readConfirmed = (): ConfirmedRecord | null => {
+  try {
+    const raw = localStorage.getItem(CONFIRMED_KEY);
+    if (!raw) return null;
+    const r: ConfirmedRecord = JSON.parse(raw);
+    if (Date.now() - r.at > FOUR_HOURS_MS) {
+      localStorage.removeItem(CONFIRMED_KEY);
+      return null;
+    }
+    return r;
+  } catch { return null; }
+};
 
 const BuyPromo = () => {
   const navigate = useNavigate();
@@ -32,6 +49,17 @@ const BuyPromo = () => {
     account_name: string;
     amount: string;
   } | null>(null);
+
+  const [confirmedCode, setConfirmedCode] = useState<string | null>(null);
+
+  // On mount, if a recent (<4h) confirmation exists, show confirmed screen
+  useEffect(() => {
+    const r = readConfirmed();
+    if (r) {
+      setConfirmedCode(r.code);
+      setPageState("confirmed");
+    }
+  }, []);
 
   // Fetch payment details when entering account screen
   const fetchDetails = async () => {
@@ -92,32 +120,32 @@ const BuyPromo = () => {
     }
   }, [pageState]);
 
-  // Poll for admin verification when on failed screen
+  // Realtime: instantly switch to confirmed when admin verifies (any page state)
   useEffect(() => {
-    if (pageState !== "failed") return;
-    const poll = setInterval(async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        // Check if user has a promo code generated (means admin verified)
-        const { data: codes } = await supabase
-          .from("promo_codes")
-          .select("code")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-        if (codes && codes.length > 0) {
-          clearInterval(poll);
-          const code = codes[0].code;
+    let channel: any;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      channel = supabase
+        .channel("buy-promo-confirm-" + user.id)
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "promo_codes",
+          filter: `user_id=eq.${user.id}`,
+        }, (payload: any) => {
+          const code = payload.new?.code;
+          if (!code) return;
+          localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code, at: Date.now() }));
+          setConfirmedCode(code);
+          setPageState("confirmed");
           addNotification("promo_purchased", `Purchase Successfully 🎉🎉 This is your Promo Code: ${code}`);
-          setShowSuccessPopup(true);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }, 5000);
-    return () => clearInterval(poll);
-  }, [pageState, addNotification]);
+        })
+        .subscribe();
+    })();
+    return () => { cancelled = true; if (channel) supabase.removeChannel(channel); };
+  }, [addNotification]);
 
   const handlePay = () => {
     if (!fullName || !email) {
@@ -228,6 +256,43 @@ const BuyPromo = () => {
         <p className="text-primary mt-2 text-center px-8">
           Please wait while we confirm your bank transfer...
         </p>
+      </div>
+    );
+  }
+
+  // Payment confirmed screen (persists for 4 hours)
+  if (pageState === "confirmed" && confirmedCode) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
+        <div className="w-24 h-24 rounded-full bg-green-primary flex items-center justify-center mb-6">
+          <Check className="w-12 h-12 text-white" strokeWidth={3} />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground mb-3 text-center">Payment Confirmed Successfully</h2>
+        <p className="text-muted-foreground text-center mb-6">
+          Purchased successfully 🎉 Your activation code is below.
+        </p>
+        <div className="w-full max-w-sm border-2 border-green-primary/40 bg-green-primary/5 rounded-2xl p-5 mb-4">
+          <p className="text-center text-sm text-muted-foreground mb-2">This is your Activation Code</p>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-3xl font-bold text-green-primary tracking-wider">{confirmedCode}</span>
+            <button
+              onClick={() => handleCopy(confirmedCode, "confirmed")}
+              className="px-4 py-2 bg-green-primary text-white rounded-lg font-semibold flex items-center gap-1.5"
+            >
+              {copiedField === "confirmed" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              Copy
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground mb-6 text-center">
+          A copy has also been saved to your Notifications.
+        </p>
+        <Button
+          onClick={() => navigate("/dashboard")}
+          className="w-full max-w-sm py-6 bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-bold text-base rounded-xl"
+        >
+          Go to Dashboard
+        </Button>
       </div>
     );
   }
