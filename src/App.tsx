@@ -34,6 +34,7 @@ import Security from "./pages/Security";
 import AccountSettings from "./pages/AccountSettings";
 import GiftCard from "./pages/GiftCard";
 import NotFound from "./pages/NotFound";
+import SupportReplyPopup from "./components/SupportReplyPopup";
 
 const queryClient = new QueryClient();
 
@@ -113,6 +114,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AppRoutes />
+          <SupportReplyPopup />
         </BrowserRouter>
       </AppProvider>
     </TooltipProvider>
