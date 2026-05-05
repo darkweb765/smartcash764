@@ -8,7 +8,24 @@ import { useToast } from "@/hooks/use-toast";
 
 import { useAppContext } from "@/contexts/AppContext";
 
-type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "failed";
+type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "failed" | "confirmed";
+
+const CONFIRMED_KEY = "smartpay_payment_confirmed";
+const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+
+interface ConfirmedRecord { code: string; at: number; }
+const readConfirmed = (): ConfirmedRecord | null => {
+  try {
+    const raw = localStorage.getItem(CONFIRMED_KEY);
+    if (!raw) return null;
+    const r: ConfirmedRecord = JSON.parse(raw);
+    if (Date.now() - r.at > FOUR_HOURS_MS) {
+      localStorage.removeItem(CONFIRMED_KEY);
+      return null;
+    }
+    return r;
+  } catch { return null; }
+};
 
 const BuyPromo = () => {
   const navigate = useNavigate();
@@ -32,6 +49,17 @@ const BuyPromo = () => {
     account_name: string;
     amount: string;
   } | null>(null);
+
+  const [confirmedCode, setConfirmedCode] = useState<string | null>(null);
+
+  // On mount, if a recent (<4h) confirmation exists, show confirmed screen
+  useEffect(() => {
+    const r = readConfirmed();
+    if (r) {
+      setConfirmedCode(r.code);
+      setPageState("confirmed");
+    }
+  }, []);
 
   // Fetch payment details when entering account screen
   const fetchDetails = async () => {
