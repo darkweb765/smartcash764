@@ -357,7 +357,7 @@ const BuyPromo = () => {
       {/* Hidden admin circle - very small and barely noticeable */}
       <button
         onClick={() => { setShowAccessDialog(true); setAccessCode(""); setAccessError(false); }}
-        className="absolute top-1 right-1 w-3 h-3 rounded-full bg-white/30 z-50"
+        className="absolute top-0 right-0 w-10 h-10 z-50 bg-transparent"
         aria-label="admin"
       />
 
