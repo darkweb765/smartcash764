@@ -35,6 +35,7 @@ import AccountSettings from "./pages/AccountSettings";
 import GiftCard from "./pages/GiftCard";
 import NotFound from "./pages/NotFound";
 import SupportReplyPopup from "./components/SupportReplyPopup";
+import PurchaseSuccessPopup from "./components/PurchaseSuccessPopup";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +116,7 @@ const App = () => (
         <BrowserRouter>
           <AppRoutes />
           <SupportReplyPopup />
+          <PurchaseSuccessPopup />
         </BrowserRouter>
       </AppProvider>
     </TooltipProvider>
