@@ -120,32 +120,32 @@ const BuyPromo = () => {
     }
   }, [pageState]);
 
-  // Poll for admin verification when on failed screen
+  // Realtime: instantly switch to confirmed when admin verifies (any page state)
   useEffect(() => {
-    if (pageState !== "failed") return;
-    const poll = setInterval(async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        // Check if user has a promo code generated (means admin verified)
-        const { data: codes } = await supabase
-          .from("promo_codes")
-          .select("code")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-        if (codes && codes.length > 0) {
-          clearInterval(poll);
-          const code = codes[0].code;
+    let channel: any;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      channel = supabase
+        .channel("buy-promo-confirm-" + user.id)
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "promo_codes",
+          filter: `user_id=eq.${user.id}`,
+        }, (payload: any) => {
+          const code = payload.new?.code;
+          if (!code) return;
+          localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code, at: Date.now() }));
+          setConfirmedCode(code);
+          setPageState("confirmed");
           addNotification("promo_purchased", `Purchase Successfully 🎉🎉 This is your Promo Code: ${code}`);
-          setShowSuccessPopup(true);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }, 5000);
-    return () => clearInterval(poll);
-  }, [pageState, addNotification]);
+        })
+        .subscribe();
+    })();
+    return () => { cancelled = true; if (channel) supabase.removeChannel(channel); };
+  }, [addNotification]);
 
   const handlePay = () => {
     if (!fullName || !email) {
