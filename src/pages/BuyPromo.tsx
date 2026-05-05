@@ -260,6 +260,43 @@ const BuyPromo = () => {
     );
   }
 
+  // Payment confirmed screen (persists for 4 hours)
+  if (pageState === "confirmed" && confirmedCode) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
+        <div className="w-24 h-24 rounded-full bg-green-primary flex items-center justify-center mb-6">
+          <Check className="w-12 h-12 text-white" strokeWidth={3} />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground mb-3 text-center">Payment Confirmed Successfully</h2>
+        <p className="text-muted-foreground text-center mb-6">
+          Purchased successfully 🎉 Your activation code is below.
+        </p>
+        <div className="w-full max-w-sm border-2 border-green-primary/40 bg-green-primary/5 rounded-2xl p-5 mb-4">
+          <p className="text-center text-sm text-muted-foreground mb-2">This is your Activation Code</p>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-3xl font-bold text-green-primary tracking-wider">{confirmedCode}</span>
+            <button
+              onClick={() => handleCopy(confirmedCode, "confirmed")}
+              className="px-4 py-2 bg-green-primary text-white rounded-lg font-semibold flex items-center gap-1.5"
+            >
+              {copiedField === "confirmed" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              Copy
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground mb-6 text-center">
+          A copy has also been saved to your Notifications.
+        </p>
+        <Button
+          onClick={() => navigate("/dashboard")}
+          className="w-full max-w-sm py-6 bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-bold text-base rounded-xl"
+        >
+          Go to Dashboard
+        </Button>
+      </div>
+    );
+  }
+
   // Transaction verification failed screen
   if (pageState === "failed") {
     return (
