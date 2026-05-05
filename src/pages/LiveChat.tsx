@@ -138,14 +138,33 @@ const LiveChat = () => {
       setImageFile(null);
       setImagePreview(null);
 
-      setTimeout(async () => {
-        await supabase.from("chat_messages").insert({
-          user_id: userId,
-          message: "Thank you for your message! Our support team has been notified and will respond shortly.",
-          image_url: null,
-          sender_type: "support",
-        });
-      }, 1500);
+      // Count prior user messages (excluding the one we just sent, which will arrive via realtime)
+      const priorUserCount = messages.filter(m => m.sender_type === "user").length;
+      // Check if support has ever replied beyond the initial welcome
+      const supportHasReplied = messages.some(
+        m => m.sender_type === "support" && m.id !== "welcome"
+      );
+
+      // Only auto-reply for the first 2 user messages, and stop once a real support reply exists
+      if (!supportHasReplied && priorUserCount < 2) {
+        const userText = (input.trim() || "").toLowerCase();
+        const isGreeting = /^(hi|hello|hey|good\s*(morning|afternoon|evening)|hola)\b/.test(userText);
+
+        const replyMessage = priorUserCount === 0
+          ? (isGreeting
+              ? "Hi 👋 How can we help you today?"
+              : "Hi 👋 How can we help you today?")
+          : "Thanks! Our support team will reply to your message shortly.";
+
+        setTimeout(async () => {
+          await supabase.from("chat_messages").insert({
+            user_id: userId,
+            message: replyMessage,
+            image_url: null,
+            sender_type: "support",
+          });
+        }, 1200);
+      }
     } catch (err: any) {
       console.error(err);
       setUploadError(err?.message || "Upload failed, try again");
