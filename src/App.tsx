@@ -114,6 +114,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AppRoutes />
+          <SupportReplyPopup />
         </BrowserRouter>
       </AppProvider>
     </TooltipProvider>
