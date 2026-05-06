@@ -313,12 +313,12 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Generate unique code with retry
+        // Generate unique PROMO code (format: PEF12345)
         let code = "";
         let attempts = 0;
-        while (attempts < 10) {
-          const randomNum = Math.floor(1000 + Math.random() * 9000);
-          code = `INST-${randomNum}-SP`;
+        while (attempts < 20) {
+          const randomNum = Math.floor(10000 + Math.random() * 90000);
+          code = `PEF${randomNum}`;
           const { error: insErr } = await supabase.from("promo_codes").insert({
             user_id: purchase.user_id,
             purchase_id: purchase_id,
@@ -329,7 +329,7 @@ Deno.serve(async (req) => {
           if (!insErr) break;
           if (insErr.code !== "23505") throw insErr; // not a unique violation
           attempts++;
-          if (attempts >= 10) {
+          if (attempts >= 20) {
             return new Response(JSON.stringify({ error: "This code already exists or has been used." }), {
               status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
