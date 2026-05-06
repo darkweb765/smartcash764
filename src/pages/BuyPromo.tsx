@@ -37,10 +37,7 @@ const BuyPromo = () => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(3);
 
-  // Admin access
-  const [showAccessDialog, setShowAccessDialog] = useState(false);
-  const [accessCode, setAccessCode] = useState("");
-  const [accessError, setAccessError] = useState(false);
+  // (Admin entry handled by separate /admin-login route)
 
   // Payment details from backend
   const [paymentDetails, setPaymentDetails] = useState<{
@@ -193,34 +190,8 @@ const BuyPromo = () => {
     setPageState("verifying");
   };
 
-  const handleAccessCodeSubmit = async () => {
-    try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/admin-actions?action=validate_admin_code`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ code: accessCode }),
-        }
-      );
-      const data = await response.json();
-      if (data.valid) {
-        localStorage.setItem("admin_session_token", accessCode);
-        setShowAccessDialog(false);
-        setAccessCode("");
-        setAccessError(false);
-        navigate("/admin-panel");
-      } else {
-        setAccessError(true);
-      }
-    } catch {
-      setAccessError(true);
-    }
-  };
+  // Admin entry: hidden corner button → routes to backend-protected admin login
+  const openAdminLogin = () => navigate("/admin-login");
 
   // Loading screen
   if (pageState === "loading") {
