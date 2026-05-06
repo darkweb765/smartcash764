@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_sessions: {
+        Row: {
+          admin_id: string
+          expires_at: string
+          id: string
+          ip: string | null
+          issued_at: string
+          jti: string
+          revoked: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          admin_id: string
+          expires_at: string
+          id?: string
+          ip?: string | null
+          issued_at?: string
+          jti: string
+          revoked?: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          admin_id?: string
+          expires_at?: string
+          id?: string
+          ip?: string | null
+          issued_at?: string
+          jti?: string
+          revoked?: boolean
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_sessions_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admins: {
+        Row: {
+          created_at: string
+          email: string
+          failed_attempts: number
+          id: string
+          last_login_at: string | null
+          locked_until: string | null
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          failed_attempts?: number
+          id?: string
+          last_login_at?: string | null
+          locked_until?: string | null
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          failed_attempts?: number
+          id?: string
+          last_login_at?: string | null
+          locked_until?: string | null
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string

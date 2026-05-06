@@ -85,23 +85,39 @@ const AdminPanel = () => {
 
   const callAdmin = async (method: string, action: string, body?: any, extraParams?: string) => {
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const token = localStorage.getItem("admin_jwt") || "";
+    const exp = Number(localStorage.getItem("admin_jwt_exp") || 0);
+    if (!token || (exp && exp * 1000 < Date.now())) {
+      localStorage.removeItem("admin_jwt");
+      localStorage.removeItem("admin_jwt_exp");
+      navigate("/admin-login");
+      return null;
+    }
     const url = `https://${projectId}.supabase.co/functions/v1/admin-actions?action=${action}${extraParams || ""}`;
     const opts: RequestInit = {
       method,
       headers: {
         "Content-Type": "application/json",
-        "x-admin-code": localStorage.getItem("admin_session_token") || "",
+        Authorization: `Bearer ${token}`,
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
     };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(url, opts);
-    if (res.status === 403) {
-      localStorage.removeItem("admin_session_token");
-      navigate("/buy-promo");
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem("admin_jwt");
+      localStorage.removeItem("admin_jwt_exp");
+      navigate("/admin-login");
       return null;
     }
     return res.json();
+  };
+
+  const handleAdminLogout = async (allDevices = false) => {
+    await callAdmin("POST", allDevices ? "admin_logout_all" : "admin_logout");
+    localStorage.removeItem("admin_jwt");
+    localStorage.removeItem("admin_jwt_exp");
+    navigate("/admin-login");
   };
 
   const fetchData = async () => {
@@ -489,13 +505,30 @@ const AdminPanel = () => {
               <p className="text-[11px] text-white/70 mt-1">SmartPay · Secure session</p>
             </div>
           </div>
-          <button
-            onClick={fetchData}
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-            aria-label="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchData}
+              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              aria-label="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
+            <button
+              onClick={() => handleAdminLogout(false)}
+              className="px-3 h-9 rounded-full bg-white/10 hover:bg-white/20 text-xs font-semibold"
+              aria-label="Logout"
+            >
+              Logout
+            </button>
+            <button
+              onClick={() => handleAdminLogout(true)}
+              className="px-3 h-9 rounded-full bg-red-500/30 hover:bg-red-500/50 text-xs font-semibold"
+              aria-label="Logout all devices"
+              title="Logout all devices"
+            >
+              All
+            </button>
+          </div>
         </div>
 
         {/* Stats row */}
