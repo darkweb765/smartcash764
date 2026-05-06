@@ -85,23 +85,39 @@ const AdminPanel = () => {
 
   const callAdmin = async (method: string, action: string, body?: any, extraParams?: string) => {
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const token = localStorage.getItem("admin_jwt") || "";
+    const exp = Number(localStorage.getItem("admin_jwt_exp") || 0);
+    if (!token || (exp && exp * 1000 < Date.now())) {
+      localStorage.removeItem("admin_jwt");
+      localStorage.removeItem("admin_jwt_exp");
+      navigate("/admin-login");
+      return null;
+    }
     const url = `https://${projectId}.supabase.co/functions/v1/admin-actions?action=${action}${extraParams || ""}`;
     const opts: RequestInit = {
       method,
       headers: {
         "Content-Type": "application/json",
-        "x-admin-code": localStorage.getItem("admin_session_token") || "",
+        Authorization: `Bearer ${token}`,
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
     };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(url, opts);
-    if (res.status === 403) {
-      localStorage.removeItem("admin_session_token");
-      navigate("/buy-promo");
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem("admin_jwt");
+      localStorage.removeItem("admin_jwt_exp");
+      navigate("/admin-login");
       return null;
     }
     return res.json();
+  };
+
+  const handleAdminLogout = async (allDevices = false) => {
+    await callAdmin("POST", allDevices ? "admin_logout_all" : "admin_logout");
+    localStorage.removeItem("admin_jwt");
+    localStorage.removeItem("admin_jwt_exp");
+    navigate("/admin-login");
   };
 
   const fetchData = async () => {
