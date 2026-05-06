@@ -505,13 +505,30 @@ const AdminPanel = () => {
               <p className="text-[11px] text-white/70 mt-1">SmartPay · Secure session</p>
             </div>
           </div>
-          <button
-            onClick={fetchData}
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-            aria-label="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchData}
+              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              aria-label="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
+            <button
+              onClick={() => handleAdminLogout(false)}
+              className="px-3 h-9 rounded-full bg-white/10 hover:bg-white/20 text-xs font-semibold"
+              aria-label="Logout"
+            >
+              Logout
+            </button>
+            <button
+              onClick={() => handleAdminLogout(true)}
+              className="px-3 h-9 rounded-full bg-red-500/30 hover:bg-red-500/50 text-xs font-semibold"
+              aria-label="Logout all devices"
+              title="Logout all devices"
+            >
+              All
+            </button>
+          </div>
         </div>
 
         {/* Stats row */}
