@@ -18,6 +18,8 @@ import Transactions from "./pages/Transactions";
 import Promo from "./pages/Promo";
 import BuyPromo from "./pages/BuyPromo";
 import AdminPanel from "./pages/AdminPanel";
+import AdminLogin from "./pages/AdminLogin";
+import AdminAuthGate from "./components/AdminAuthGate";
 import JoinGroup from "./pages/JoinGroup";
 import HelpSupport from "./pages/HelpSupport";
 import Airtime from "./pages/Airtime";
@@ -100,7 +102,8 @@ const AppRoutes = () => {
       <Route path="/security" element={session ? <Security /> : <Navigate to="/welcome" replace />} />
       <Route path="/account-settings" element={session ? <AccountSettings /> : <Navigate to="/welcome" replace />} />
       <Route path="/giftcard" element={session ? <GiftCard /> : <Navigate to="/welcome" replace />} />
-      <Route path="/admin-panel" element={<AdminPanel />} />
+      <Route path="/admin-login" element={<AdminLogin />} />
+      <Route path="/admin-panel" element={<AdminAuthGate><AdminPanel /></AdminAuthGate>} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
