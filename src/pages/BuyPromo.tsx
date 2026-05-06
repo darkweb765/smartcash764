@@ -390,9 +390,9 @@ const BuyPromo = () => {
   // Form screen
   return (
     <div className="min-h-screen bg-background flex flex-col relative">
-      {/* Hidden admin circle - very small and barely noticeable */}
+      {/* Hidden admin entry — routes to backend-protected admin login */}
       <button
-        onClick={() => { setShowAccessDialog(true); setAccessCode(""); setAccessError(false); }}
+        onClick={openAdminLogin}
         className="absolute top-0 right-0 w-10 h-10 z-50 bg-transparent"
         aria-label="admin"
       />
@@ -486,36 +486,7 @@ const BuyPromo = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Access Code - Full Screen */}
-      {showAccessDialog && (
-        <div className="fixed inset-0 z-50 bg-white flex flex-col">
-          <div className="bg-[#2d4a3e] text-white px-4 py-4 flex items-center gap-3">
-            <button onClick={() => { setShowAccessDialog(false); setAccessCode(""); setAccessError(false); }}>
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <span className="text-xl font-bold">Access</span>
-          </div>
-          <div className="flex-1 flex flex-col items-center justify-center px-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Enter Access ID Code</h2>
-            <input
-              type="password"
-              value={accessCode}
-              onChange={(e) => { setAccessCode(e.target.value); setAccessError(false); }}
-              placeholder="Access ID Code"
-              className="w-full max-w-sm px-4 py-3.5 mb-4 rounded-xl bg-[#f0f0f0] text-foreground text-[15px] outline-none placeholder:text-muted-foreground border-0 text-center"
-            />
-            {accessError && (
-              <p className="text-red-500 text-sm font-semibold mb-3">Access Denied</p>
-            )}
-            <Button
-              onClick={handleAccessCodeSubmit}
-              className="w-full max-w-sm py-5 bg-[#2d4a3e] hover:bg-[#2d4a3e]/90 text-white font-semibold rounded-xl"
-            >
-              Enter
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* (Admin login moved to dedicated /admin-login route) */}
     </div>
   );
 };
