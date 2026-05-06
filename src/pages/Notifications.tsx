@@ -55,9 +55,9 @@ const Notifications = () => {
     }).format(value);
   };
 
-  // Extract promo code from message like "...Promo Code: INST-1234-SP"
+  // Extract promo code from message like "...Promo Code: PEF12345"
   const extractPromoCode = (message: string): string | null => {
-    const match = message.match(/INST-\d{4}-SP/);
+    const match = message.match(/PEF\d{5}/);
     return match ? match[0] : null;
   };
 
