@@ -329,7 +329,7 @@ Deno.serve(async (req) => {
           if (!insErr) break;
           if (insErr.code !== "23505") throw insErr; // not a unique violation
           attempts++;
-          if (attempts >= 10) {
+          if (attempts >= 20) {
             return new Response(JSON.stringify({ error: "This code already exists or has been used." }), {
               status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
