@@ -17,6 +17,7 @@ interface Purchase {
   username: string;
   status: string;
   created_at: string;
+  receipt_image?: string | null;
 }
 
 interface AlertItem {
