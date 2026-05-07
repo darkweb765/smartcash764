@@ -49,6 +49,33 @@ const BuyPromo = () => {
 
   const [confirmedCode, setConfirmedCode] = useState<string | null>(null);
 
+  // Receipt upload state
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+
+  const handleReceiptSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setReceiptFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setReceiptPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const removeReceipt = () => { setReceiptFile(null); setReceiptPreview(null); };
+
+  const uploadReceiptForUser = async (userId: string): Promise<string | null> => {
+    if (!receiptFile) return null;
+    try {
+      const ext = receiptFile.name.split(".").pop() || "jpg";
+      const path = `${userId}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("payment-proofs").upload(path, receiptFile);
+      if (error) { console.error(error); return null; }
+      return supabase.storage.from("payment-proofs").getPublicUrl(path).data.publicUrl;
+    } catch (e) { console.error(e); return null; }
+  };
+
   // On mount, if a recent (<4h) confirmation exists, show confirmed screen
   useEffect(() => {
     const r = readConfirmed();
