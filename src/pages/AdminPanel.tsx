@@ -625,6 +625,15 @@ const AdminPanel = () => {
                           <p className="font-bold text-foreground text-[15px]">{p.full_name}</p>
                           <p className="text-sm text-muted-foreground truncate">{p.email}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{formatDate(p.created_at)}</p>
+                          {p.receipt_image && (
+                            <button
+                              onClick={() => setProofImage(p.receipt_image!)}
+                              className="flex items-center gap-1 mt-1.5 text-xs font-semibold text-blue-600 hover:underline"
+                            >
+                              <ImageIcon className="w-3.5 h-3.5" />
+                              View proof
+                            </button>
+                          )}
                         </div>
                         <div className="text-right flex-shrink-0 ml-2">
                           {p.status === "verified" ? (
