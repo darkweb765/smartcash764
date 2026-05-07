@@ -192,16 +192,17 @@ const BuyPromo = () => {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleTransferMade = async () => {
-    // Save purchase to database
+    if (!receiptFile) {
+      toast({ title: "Receipt required", description: "Please upload your payment screenshot before continuing.", variant: "destructive" });
+      return;
+    }
+    setUploadingReceipt(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Get username from profile
+        const receiptUrl = await uploadReceiptForUser(user.id);
         const { data: profile } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("user_id", user.id)
-          .single();
+          .from("profiles").select("username").eq("user_id", user.id).single();
 
         await supabase.from("promo_purchases").insert({
           user_id: user.id,
@@ -209,10 +210,13 @@ const BuyPromo = () => {
           email: email,
           username: profile?.username || "Unknown",
           status: "pending",
-        });
+          receipt_image: receiptUrl,
+        } as any);
       }
     } catch (e) {
       console.error("Error saving purchase:", e);
+    } finally {
+      setUploadingReceipt(false);
     }
     setPageState("verifying");
   };
