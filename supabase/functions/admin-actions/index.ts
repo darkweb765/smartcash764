@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
         .select("id", { count: "exact", head: true });
       if ((count || 0) > 0) return json({ error: "Registration is locked" }, 403);
 
-      const hash = await bcrypt.hash(body.password);
+      const hash = bcrypt.hashSync(body.password, bcrypt.genSaltSync(10));
       const { error } = await supabase.from("admins").insert({
         email: body.email.toLowerCase(),
         password_hash: hash,
@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
         return json({ error: "Account locked. Try again later." }, 423);
       }
 
-      const ok = await bcrypt.compare(body.password, admin.password_hash);
+      const ok = bcrypt.compareSync(body.password, admin.password_hash);
       if (!ok) {
         const attempts = (admin.failed_attempts || 0) + 1;
         const updates: any = { failed_attempts: attempts };
