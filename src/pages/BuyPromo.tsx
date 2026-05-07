@@ -406,11 +406,36 @@ const BuyPromo = () => {
               Transfer the exact amount to the account above. Your Promo Code will be generated automatically after payment confirmation. Use your registered name as the transfer description for faster processing.
             </p>
 
+            {/* Receipt upload */}
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-2">
+                Upload payment screenshot <span className="text-red-500">*</span>
+              </p>
+              {receiptPreview ? (
+                <div className="relative w-full rounded-xl overflow-hidden border border-border">
+                  <img src={receiptPreview} alt="Receipt" className="w-full max-h-56 object-cover" />
+                  <button
+                    onClick={removeReceipt}
+                    className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-border rounded-xl bg-card cursor-pointer">
+                  <Upload className="w-7 h-7 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Tap to upload payment proof</span>
+                  <input type="file" accept="image/*" onChange={handleReceiptSelect} className="hidden" />
+                </label>
+              )}
+            </div>
+
             <Button
               onClick={handleTransferMade}
-              className="w-full py-6 bg-yellow-500 hover:bg-yellow-500/90 text-foreground font-bold text-base rounded-xl"
+              disabled={uploadingReceipt || !receiptFile}
+              className="w-full py-6 bg-yellow-500 hover:bg-yellow-500/90 text-foreground font-bold text-base rounded-xl disabled:opacity-50"
             >
-              I have made this bank Transfer
+              {uploadingReceipt ? "Uploading..." : "I have made this bank Transfer"}
             </Button>
           </div>
         </div>
