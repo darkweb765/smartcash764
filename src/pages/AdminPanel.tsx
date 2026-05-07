@@ -906,6 +906,21 @@ const AdminPanel = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Proof Image Dialog */}
+      <Dialog open={!!proofImage} onOpenChange={() => setProofImage(null)}>
+        <DialogContent className="max-w-md mx-auto rounded-2xl border-0 p-3 bg-white">
+          <div className="flex flex-col gap-3">
+            <p className="text-sm font-bold text-foreground px-1">Payment Proof</p>
+            {proofImage && (
+              <img src={proofImage} alt="Payment proof" className="w-full rounded-xl object-contain max-h-[70vh]" />
+            )}
+            <Button onClick={() => setProofImage(null)} className="w-full py-5 bg-green-primary hover:bg-green-primary/90 text-white">
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
