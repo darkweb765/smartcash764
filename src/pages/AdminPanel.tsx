@@ -83,6 +83,7 @@ const AdminPanel = () => {
   const [successMsg, setSuccessMsg] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [proofImage, setProofImage] = useState<string | null>(null);
 
   const callAdmin = async (method: string, action: string, body?: any, extraParams?: string) => {
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
