@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
         return json({ error: "Account locked. Try again later." }, 423);
       }
 
-      const ok = await bcrypt.compare(body.password, admin.password_hash);
+      const ok = bcrypt.compareSync(body.password, admin.password_hash);
       if (!ok) {
         const attempts = (admin.failed_attempts || 0) + 1;
         const updates: any = { failed_attempts: attempts };
