@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, X } from "lucide-react";
+import { ArrowLeft, Copy, Check, X, Upload, Image as ImageIcon } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +48,33 @@ const BuyPromo = () => {
   } | null>(null);
 
   const [confirmedCode, setConfirmedCode] = useState<string | null>(null);
+
+  // Receipt upload state
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+
+  const handleReceiptSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setReceiptFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setReceiptPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const removeReceipt = () => { setReceiptFile(null); setReceiptPreview(null); };
+
+  const uploadReceiptForUser = async (userId: string): Promise<string | null> => {
+    if (!receiptFile) return null;
+    try {
+      const ext = receiptFile.name.split(".").pop() || "jpg";
+      const path = `${userId}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("payment-proofs").upload(path, receiptFile);
+      if (error) { console.error(error); return null; }
+      return supabase.storage.from("payment-proofs").getPublicUrl(path).data.publicUrl;
+    } catch (e) { console.error(e); return null; }
+  };
 
   // On mount, if a recent (<4h) confirmation exists, show confirmed screen
   useEffect(() => {
@@ -165,16 +192,17 @@ const BuyPromo = () => {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleTransferMade = async () => {
-    // Save purchase to database
+    if (!receiptFile) {
+      toast({ title: "Receipt required", description: "Please upload your payment screenshot before continuing.", variant: "destructive" });
+      return;
+    }
+    setUploadingReceipt(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Get username from profile
+        const receiptUrl = await uploadReceiptForUser(user.id);
         const { data: profile } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("user_id", user.id)
-          .single();
+          .from("profiles").select("username").eq("user_id", user.id).single();
 
         await supabase.from("promo_purchases").insert({
           user_id: user.id,
@@ -182,10 +210,13 @@ const BuyPromo = () => {
           email: email,
           username: profile?.username || "Unknown",
           status: "pending",
-        });
+          receipt_image: receiptUrl,
+        } as any);
       }
     } catch (e) {
       console.error("Error saving purchase:", e);
+    } finally {
+      setUploadingReceipt(false);
     }
     setPageState("verifying");
   };
@@ -375,11 +406,36 @@ const BuyPromo = () => {
               Transfer the exact amount to the account above. Your Promo Code will be generated automatically after payment confirmation. Use your registered name as the transfer description for faster processing.
             </p>
 
+            {/* Receipt upload */}
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-2">
+                Upload payment screenshot <span className="text-red-500">*</span>
+              </p>
+              {receiptPreview ? (
+                <div className="relative w-full rounded-xl overflow-hidden border border-border">
+                  <img src={receiptPreview} alt="Receipt" className="w-full max-h-56 object-cover" />
+                  <button
+                    onClick={removeReceipt}
+                    className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-border rounded-xl bg-card cursor-pointer">
+                  <Upload className="w-7 h-7 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Tap to upload payment proof</span>
+                  <input type="file" accept="image/*" onChange={handleReceiptSelect} className="hidden" />
+                </label>
+              )}
+            </div>
+
             <Button
               onClick={handleTransferMade}
-              className="w-full py-6 bg-yellow-500 hover:bg-yellow-500/90 text-foreground font-bold text-base rounded-xl"
+              disabled={uploadingReceipt || !receiptFile}
+              className="w-full py-6 bg-yellow-500 hover:bg-yellow-500/90 text-foreground font-bold text-base rounded-xl disabled:opacity-50"
             >
-              I have made this bank Transfer
+              {uploadingReceipt ? "Uploading..." : "I have made this bank Transfer"}
             </Button>
           </div>
         </div>

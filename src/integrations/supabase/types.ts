@@ -219,6 +219,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          receipt_image: string | null
           status: string
           user_id: string
           username: string
@@ -228,6 +229,7 @@ export type Database = {
           email: string
           full_name: string
           id?: string
+          receipt_image?: string | null
           status?: string
           user_id: string
           username: string
@@ -237,6 +239,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          receipt_image?: string | null
           status?: string
           user_id?: string
           username?: string

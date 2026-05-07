@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Copy, Send, Search, RefreshCw, Shield, Users, Bell, MessageCircle, FileText, X, Wallet, Save } from "lucide-react";
+import { ArrowLeft, CheckCircle, Copy, Send, Search, RefreshCw, Shield, Users, Bell, MessageCircle, FileText, X, Wallet, Save, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ interface Purchase {
   username: string;
   status: string;
   created_at: string;
+  receipt_image?: string | null;
 }
 
 interface AlertItem {
@@ -82,6 +83,7 @@ const AdminPanel = () => {
   const [successMsg, setSuccessMsg] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [proofImage, setProofImage] = useState<string | null>(null);
 
   const callAdmin = async (method: string, action: string, body?: any, extraParams?: string) => {
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
@@ -623,6 +625,15 @@ const AdminPanel = () => {
                           <p className="font-bold text-foreground text-[15px]">{p.full_name}</p>
                           <p className="text-sm text-muted-foreground truncate">{p.email}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{formatDate(p.created_at)}</p>
+                          {p.receipt_image && (
+                            <button
+                              onClick={() => setProofImage(p.receipt_image!)}
+                              className="flex items-center gap-1 mt-1.5 text-xs font-semibold text-blue-600 hover:underline"
+                            >
+                              <ImageIcon className="w-3.5 h-3.5" />
+                              View proof
+                            </button>
+                          )}
                         </div>
                         <div className="text-right flex-shrink-0 ml-2">
                           {p.status === "verified" ? (
@@ -891,6 +902,21 @@ const AdminPanel = () => {
             <h2 className="text-lg font-bold text-foreground whitespace-pre-line">{successMsg}</h2>
             <Button onClick={() => setSuccessMsg("")} className="w-full py-5 bg-green-primary hover:bg-green-primary/90 text-white mt-2">
               OK
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Proof Image Dialog */}
+      <Dialog open={!!proofImage} onOpenChange={() => setProofImage(null)}>
+        <DialogContent className="max-w-md mx-auto rounded-2xl border-0 p-3 bg-white">
+          <div className="flex flex-col gap-3">
+            <p className="text-sm font-bold text-foreground px-1">Payment Proof</p>
+            {proofImage && (
+              <img src={proofImage} alt="Payment proof" className="w-full rounded-xl object-contain max-h-[70vh]" />
+            )}
+            <Button onClick={() => setProofImage(null)} className="w-full py-5 bg-green-primary hover:bg-green-primary/90 text-white">
+              Close
             </Button>
           </div>
         </DialogContent>
