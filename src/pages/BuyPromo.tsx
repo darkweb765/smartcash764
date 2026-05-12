@@ -164,7 +164,7 @@ const BuyPromo = () => {
           localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code, at: Date.now() }));
           setConfirmedCode(code);
           setPageState("confirmed");
-          addNotification("promo_purchased", `Purchase Successfully 🎉🎉 This is your Promo Code: ${code}`);
+          addNotification("promo_purchased", `Your activation code is ready. Tap copy to use it. ${code}`);
         })
         .subscribe();
     })();
