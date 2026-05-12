@@ -98,6 +98,7 @@ Deno.serve(async (req) => {
   const publicActions = new Set([
     "admin_login", "admin_register", "admin_status",
     "get_payment_details", "verify_service_code",
+    "verify_admin_withdraw_pin",
   ]);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
