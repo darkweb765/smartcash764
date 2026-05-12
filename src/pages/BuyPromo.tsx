@@ -239,7 +239,7 @@ const BuyPromo = () => {
 
   // Verifying payment screen
   if (pageState === "verifying") {
-    const progress = ((3 - countdown) / 3) * 100;
+    const progress = ((10 - countdown) / 10) * 100;
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center">
         <div className="relative w-32 h-32 mb-8">
