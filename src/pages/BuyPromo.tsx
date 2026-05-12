@@ -262,39 +262,72 @@ const BuyPromo = () => {
     );
   }
 
-  // Payment confirmed screen (persists for 4 hours)
+  // Payment confirmed screen (persists for 4 hours) — ticket / receipt style
   if (pageState === "confirmed" && confirmedCode) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
-        <div className="w-24 h-24 rounded-full bg-green-primary flex items-center justify-center mb-6">
-          <Check className="w-12 h-12 text-white" strokeWidth={3} />
+      <div className="min-h-screen bg-background flex flex-col px-5 pt-10 pb-8">
+        {/* Hero */}
+        <div className="relative w-full max-w-sm mx-auto rounded-3xl overflow-hidden bg-gradient-to-br from-green-primary to-green-primary/70 text-white p-6 shadow-xl">
+          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/10" />
+          <div className="absolute -bottom-12 -left-8 w-28 h-28 rounded-full bg-white/10" />
+          <div className="relative flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
+              <Check className="w-7 h-7 text-white" strokeWidth={3} />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-widest opacity-80">Payment</p>
+              <h2 className="text-xl font-extrabold leading-tight">Confirmed Successfully</h2>
+            </div>
+          </div>
+          <p className="relative text-sm mt-4 opacity-95">
+            Purchased successfully 🎊 Your activation code is ready below.
+          </p>
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-3 text-center">Payment Confirmed Successfully</h2>
-        <p className="text-muted-foreground text-center mb-6">
-          Purchased successfully 🎉 Your activation code is below.
-        </p>
-        <div className="w-full max-w-sm border-2 border-green-primary/40 bg-green-primary/5 rounded-2xl p-5 mb-4">
-          <p className="text-center text-sm text-muted-foreground mb-2">This is your Activation Code</p>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-3xl font-bold text-green-primary tracking-wider">{confirmedCode}</span>
+
+        {/* Ticket cut */}
+        <div className="w-full max-w-sm mx-auto -mt-3 flex items-center">
+          <div className="w-5 h-5 rounded-full bg-background -ml-2" />
+          <div className="flex-1 border-t-2 border-dashed border-border" />
+          <div className="w-5 h-5 rounded-full bg-background -mr-2" />
+        </div>
+
+        {/* Code card */}
+        <div className="w-full max-w-sm mx-auto bg-card border border-border rounded-3xl p-5 mt-3 shadow-sm">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground text-center mb-3">
+            Your Activation Code
+          </p>
+          <div className="flex items-center justify-between gap-3 bg-green-primary/5 border border-dashed border-green-primary/40 rounded-2xl px-4 py-3">
+            <span className="text-2xl font-extrabold text-green-primary tracking-[0.25em]">{confirmedCode}</span>
             <button
               onClick={() => handleCopy(confirmedCode, "confirmed")}
-              className="px-4 py-2 bg-green-primary text-white rounded-lg font-semibold flex items-center gap-1.5"
+              className="shrink-0 px-3 py-2 bg-green-primary text-white rounded-xl font-semibold flex items-center gap-1.5 text-sm active:scale-95 transition-transform"
             >
               {copiedField === "confirmed" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              Copy
+              {copiedField === "confirmed" ? "Copied" : "Copy"}
             </button>
           </div>
+          <p className="text-[11px] text-muted-foreground text-center mt-3">
+            A copy has been saved permanently to your Notifications.
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground mb-6 text-center">
-          A copy has also been saved to your Notifications.
-        </p>
-        <Button
-          onClick={() => navigate("/dashboard")}
-          className="w-full max-w-sm py-6 bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-bold text-base rounded-xl"
-        >
-          Go to Dashboard
-        </Button>
+
+        <div className="flex-1" />
+
+        <div className="w-full max-w-sm mx-auto space-y-3">
+          <Button
+            onClick={() => navigate("/notifications")}
+            variant="outline"
+            className="w-full py-6 font-semibold rounded-xl border-green-primary/40 text-green-primary"
+          >
+            View in Notifications
+          </Button>
+          <Button
+            onClick={() => navigate("/dashboard")}
+            className="w-full py-6 bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-bold text-base rounded-xl"
+          >
+            Go to Dashboard
+          </Button>
+        </div>
       </div>
     );
   }
