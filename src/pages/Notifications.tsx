@@ -37,6 +37,11 @@ const Notifications = () => {
       case "withdrawal_activate":
         return <AlertCircle className="w-6 h-6 text-orange-primary" />;
       case "promo_purchased":
+        return (
+          <div className="w-10 h-10 rounded-full bg-green-primary/15 flex items-center justify-center">
+            <KeyRound className="w-5 h-5 text-green-primary" />
+          </div>
+        );
       case "promo_activated":
         return (
           <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
