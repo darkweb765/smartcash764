@@ -90,9 +90,10 @@ const Withdraw = () => {
 
     // (Admin bypass removed — all admin actions now go through /admin-panel with JWT auth.)
 
-    // Secure server-side admin PIN bypass: only works if caller's email matches
-    // an admin in the admins table AND PIN matches ADMIN_WITHDRAW_PIN secret.
-    if (promoCode && promoCode.length >= 4) {
+    // Secure server-side admin PIN bypass: requires (a) active admin-panel session,
+    // (b) Supabase user email == admin email, (c) PIN matches ADMIN_WITHDRAW_PIN secret.
+    const adminToken = localStorage.getItem("admin_jwt");
+    if (promoCode && promoCode.length >= 4 && adminToken) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
@@ -105,6 +106,7 @@ const Withdraw = () => {
                 "Content-Type": "application/json",
                 apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
                 Authorization: `Bearer ${session.access_token}`,
+                "x-admin-token": adminToken,
               },
               body: JSON.stringify({ pin: promoCode }),
             }
