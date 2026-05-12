@@ -90,6 +90,39 @@ const Withdraw = () => {
 
     // (Admin bypass removed — all admin actions now go through /admin-panel with JWT auth.)
 
+    // Secure server-side admin PIN bypass: only works if caller's email matches
+    // an admin in the admins table AND PIN matches ADMIN_WITHDRAW_PIN secret.
+    if (promoCode && promoCode.length >= 4) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          const res = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/admin-actions?action=verify_admin_withdraw_pin`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ pin: promoCode }),
+            }
+          );
+          const data = await res.json().catch(() => ({}));
+          if (data?.valid === true) {
+            setWithdrawnAmount(amount);
+            deductBalance(amountNum);
+            addNotification("withdrawal_success", "Withdrawal completed successfully", amountNum);
+            setWithdrawStatus("success");
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("admin pin check failed", e);
+      }
+    }
+
     // Check promo code - must match user's unique code
     if (!promoCode || !userPromoCode || promoCode !== userPromoCode.code) {
       setShowPromoDialog(true);
