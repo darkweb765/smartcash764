@@ -35,7 +35,7 @@ const BuyPromo = () => {
   const [email, setEmail] = useState("");
   const [pageState, setPageState] = useState<PageState>("form");
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(10);
 
   // (Admin entry handled by separate /admin-login route)
 
