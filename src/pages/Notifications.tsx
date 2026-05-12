@@ -123,34 +123,57 @@ const Notifications = () => {
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex-shrink-0">{getIcon(notification.type)}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-foreground font-medium">
-                        {promoCode ? (
-                          <>
-                            {messageWithoutCode.split("Promo Code:")[0]}
-                            Promo Code:
-                          </>
-                        ) : (
-                          notification.message
-                        )}
-                      </p>
-
-                      {/* Promo code with copy button */}
-                      {promoCode && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="bg-muted px-3 py-1.5 rounded-full text-foreground font-bold text-sm">
-                            {promoCode}
-                          </span>
-                          <button
-                            onClick={(e) => handleCopyCode(promoCode, e)}
-                            className="text-green-primary"
-                          >
-                            {copiedCode === promoCode ? (
-                              <Check className="w-5 h-5" />
+                      {notification.type === "promo_purchased" && promoCode ? (
+                        <>
+                          <p className="text-foreground font-bold text-base">Purchased successfully 🎊</p>
+                          <p className="text-muted-foreground text-sm mt-0.5">
+                            Your activation code is ready. Tap copy to use it.
+                          </p>
+                          <div className="mt-3 flex items-center justify-between gap-2 bg-green-primary/5 border border-green-primary/30 rounded-xl px-3 py-2">
+                            <div className="flex flex-col">
+                              <span className="text-[11px] text-muted-foreground">This is your activation code</span>
+                              <span className="text-xl font-extrabold text-green-primary tracking-widest">{promoCode}</span>
+                            </div>
+                            <button
+                              onClick={(e) => handleCopyCode(promoCode, e)}
+                              className="shrink-0 px-3 py-2 bg-green-primary text-white rounded-lg font-semibold text-sm flex items-center gap-1.5"
+                            >
+                              {copiedCode === promoCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                              Copy
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-foreground font-medium">
+                            {promoCode ? (
+                              <>
+                                {messageWithoutCode.split("Promo Code:")[0]}
+                                Promo Code:
+                              </>
                             ) : (
-                              <Copy className="w-5 h-5" />
+                              notification.message
                             )}
-                          </button>
-                        </div>
+                          </p>
+
+                          {promoCode && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="bg-muted px-3 py-1.5 rounded-full text-foreground font-bold text-sm">
+                                {promoCode}
+                              </span>
+                              <button
+                                onClick={(e) => handleCopyCode(promoCode, e)}
+                                className="text-green-primary"
+                              >
+                                {copiedCode === promoCode ? (
+                                  <Check className="w-5 h-5" />
+                                ) : (
+                                  <Copy className="w-5 h-5" />
+                                )}
+                              </button>
+                            </div>
+                          )}
+                        </>
                       )}
 
                       {notification.amount && !promoCode && (
