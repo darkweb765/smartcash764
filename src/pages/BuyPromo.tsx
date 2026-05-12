@@ -129,7 +129,7 @@ const BuyPromo = () => {
       return () => clearTimeout(timer);
     }
     if (pageState === "verifying") {
-      setCountdown(3);
+      setCountdown(10);
       const interval = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
