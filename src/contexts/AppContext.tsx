@@ -43,7 +43,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           filter: `user_id=eq.${user.id}`,
         }, (payload: any) => {
           const code = payload.new?.code;
-          addNotification("promo_purchased", `Payment verified ✅ Your promo code: ${code}`);
+          addNotification("promo_purchased", `Your activation code is ready. Tap copy to use it. ${code}`);
           toast({ title: "Payment Verified", description: `Your promo code: ${code}` });
         })
         // Stage update = activated/approved/cleared
