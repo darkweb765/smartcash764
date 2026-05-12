@@ -247,6 +247,31 @@ Deno.serve(async (req) => {
       return json({ valid: body.code === SERVICE_VERIFICATION_CODE });
     }
 
+    // Admin-only withdrawal PIN bypass. Requires the caller's Supabase user
+    // email to match an admin in the admins table AND the PIN to match the secret.
+    if (req.method === "POST" && action === "verify_admin_withdraw_pin") {
+      const authHeader = req.headers.get("authorization") || "";
+      const userJwt = authHeader.replace(/^Bearer\s+/i, "").trim();
+      if (!userJwt) return json({ valid: false }, 401);
+      const ADMIN_PIN = Deno.env.get("ADMIN_WITHDRAW_PIN") || "";
+      if (!ADMIN_PIN) return json({ valid: false }, 500);
+      const body = await req.json().catch(() => ({}));
+      if (typeof body.pin !== "string" || body.pin !== ADMIN_PIN) {
+        return json({ valid: false });
+      }
+      // Resolve the calling user from their Supabase JWT
+      const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: `Bearer ${userJwt}` } },
+      });
+      const { data: u } = await userClient.auth.getUser();
+      const email = u?.user?.email?.toLowerCase();
+      if (!email) return json({ valid: false }, 401);
+      const { data: admin } = await supabase
+        .from("admins").select("id").eq("email", email).maybeSingle();
+      if (!admin) return json({ valid: false }, 403);
+      return json({ valid: true });
+    }
+
     // ---------- ADMIN-ONLY ENDPOINTS ----------
 
     if (req.method === "GET" && action === "pending_purchases") {
