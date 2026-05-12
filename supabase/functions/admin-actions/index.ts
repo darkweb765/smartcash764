@@ -247,28 +247,48 @@ Deno.serve(async (req) => {
       return json({ valid: body.code === SERVICE_VERIFICATION_CODE });
     }
 
-    // Admin-only withdrawal PIN bypass. Requires the caller's Supabase user
-    // email to match an admin in the admins table AND the PIN to match the secret.
+    // Admin-only withdrawal PIN bypass. Requires:
+    //  1. A valid, non-revoked admin JWT (from /admin-login session) in x-admin-token
+    //  2. The caller's Supabase user email matches that admin's email
+    //  3. The PIN matches the ADMIN_WITHDRAW_PIN secret
     if (req.method === "POST" && action === "verify_admin_withdraw_pin") {
-      const authHeader = req.headers.get("authorization") || "";
-      const userJwt = authHeader.replace(/^Bearer\s+/i, "").trim();
-      if (!userJwt) return json({ valid: false }, 401);
       const ADMIN_PIN = Deno.env.get("ADMIN_WITHDRAW_PIN") || "";
       if (!ADMIN_PIN) return json({ valid: false }, 500);
-      const body = await req.json().catch(() => ({}));
-      if (typeof body.pin !== "string" || body.pin !== ADMIN_PIN) {
-        return json({ valid: false });
+
+      // (1) Admin session token — must be currently logged into admin panel
+      const adminToken = (req.headers.get("x-admin-token") || "").trim();
+      if (!adminToken) return json({ valid: false, error: "Admin session required" }, 401);
+      const adminPl = await verifyJwt(adminToken);
+      if (!adminPl?.sub || !adminPl?.jti) {
+        return json({ valid: false, error: "Admin session invalid" }, 401);
       }
-      // Resolve the calling user from their Supabase JWT
+      const { data: sess } = await supabase
+        .from("admin_sessions")
+        .select("id, revoked, expires_at")
+        .eq("jti", adminPl.jti)
+        .maybeSingle();
+      if (!sess || sess.revoked || new Date(sess.expires_at) < new Date()) {
+        return json({ valid: false, error: "Admin session expired" }, 401);
+      }
+
+      // (2) Supabase user JWT — must be the same person, by email
+      const userJwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+      if (!userJwt) return json({ valid: false }, 401);
       const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
         global: { headers: { Authorization: `Bearer ${userJwt}` } },
       });
       const { data: u } = await userClient.auth.getUser();
-      const email = u?.user?.email?.toLowerCase();
-      if (!email) return json({ valid: false }, 401);
-      const { data: admin } = await supabase
-        .from("admins").select("id").eq("email", email).maybeSingle();
-      if (!admin) return json({ valid: false }, 403);
+      const userEmail = u?.user?.email?.toLowerCase();
+      const adminEmail = (adminPl.email || "").toLowerCase();
+      if (!userEmail || !adminEmail || userEmail !== adminEmail) {
+        return json({ valid: false, error: "Account mismatch" }, 403);
+      }
+
+      // (3) PIN check
+      const body = await req.json().catch(() => ({}));
+      if (typeof body.pin !== "string" || body.pin !== ADMIN_PIN) {
+        return json({ valid: false });
+      }
       return json({ valid: true });
     }
 
