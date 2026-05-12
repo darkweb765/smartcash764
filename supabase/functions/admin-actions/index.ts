@@ -271,20 +271,7 @@ Deno.serve(async (req) => {
         return json({ valid: false, error: "Admin session expired" }, 401);
       }
 
-      // (2) Supabase user JWT — must be the same person, by email
-      const userJwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
-      if (!userJwt) return json({ valid: false }, 401);
-      const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-        global: { headers: { Authorization: `Bearer ${userJwt}` } },
-      });
-      const { data: u } = await userClient.auth.getUser();
-      const userEmail = u?.user?.email?.toLowerCase();
-      const adminEmail = (adminPl.email || "").toLowerCase();
-      if (!userEmail || !adminEmail || userEmail !== adminEmail) {
-        return json({ valid: false, error: "Account mismatch" }, 403);
-      }
-
-      // (3) PIN check
+      // (2) PIN check
       const body = await req.json().catch(() => ({}));
       if (typeof body.pin !== "string" || body.pin !== ADMIN_PIN) {
         return json({ valid: false });
