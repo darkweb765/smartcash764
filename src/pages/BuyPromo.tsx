@@ -293,7 +293,7 @@ const BuyPromo = () => {
             </div>
           </div>
           <p className="relative text-sm mt-4 opacity-95">
-            Purchased successfully 🎊 Your activation code is ready below.
+            Purchased successfully 🎊 Your promo code is ready below.
           </p>
         </div>
 
@@ -307,7 +307,7 @@ const BuyPromo = () => {
         {/* Code card */}
         <div className="w-full max-w-sm mx-auto bg-card border border-border rounded-3xl p-5 mt-3 shadow-sm">
           <p className="text-xs uppercase tracking-widest text-muted-foreground text-center mb-3">
-            Your Activation Code
+            Your Promo Code
           </p>
           <div className="flex items-center justify-between gap-3 bg-green-primary/5 border border-dashed border-green-primary/40 rounded-2xl px-4 py-3">
             <span className="text-2xl font-extrabold text-green-primary tracking-[0.25em]">{confirmedCode}</span>
