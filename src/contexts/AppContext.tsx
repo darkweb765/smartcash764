@@ -43,6 +43,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           filter: `user_id=eq.${user.id}`,
         }, (payload: any) => {
           const code = payload.new?.code;
+          if (!code) return;
+          // Persist 4-hour confirmation window so BuyPromo shows "Confirmed" on next open
+          try {
+            localStorage.setItem(
+              "smartpay_payment_confirmed",
+              JSON.stringify({ code, at: Date.now() })
+            );
+          } catch {}
           addNotification("promo_purchased", `Your promo code is ready. Tap copy to use it. ${code}`);
           toast({ title: "Payment Confirmed Successfully 🎉", description: `Your promo code: ${code}` });
         })
