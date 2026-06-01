@@ -176,9 +176,8 @@ const BuyPromo = () => {
           if (!code) return;
           localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code, at: Date.now() }));
           setConfirmedCode(code);
-          setShowSuccessPopup(true);
           setPageState("confirmed");
-          // Notification is added globally by AppContext realtime listener (no duplicates).
+          // Global PurchaseSuccessPopup handles the modal; AppContext handles the notification.
         })
         .subscribe();
     })();
