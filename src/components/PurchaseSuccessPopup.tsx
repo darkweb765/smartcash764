@@ -81,9 +81,9 @@ const PurchaseSuccessPopup = () => {
           <div className="w-20 h-20 rounded-full bg-green-primary flex items-center justify-center">
             <Check className="w-10 h-10 text-white" strokeWidth={3} />
           </div>
-          <h2 className="text-xl font-bold text-green-primary">Purchased Successfully! 🎉</h2>
+          <h2 className="text-xl font-bold text-green-primary">Payment Confirmed Successfully 🎉</h2>
           <p className="text-muted-foreground text-base leading-relaxed">
-            Congratulations! You have bought your promo code successfully. Check your app notifications for the code.
+            Your promo code is ready. A copy has been saved permanently to your Notifications.
           </p>
           {pendingCode && (
             <div className="bg-muted px-4 py-2 rounded-lg font-bold text-foreground tracking-wide">

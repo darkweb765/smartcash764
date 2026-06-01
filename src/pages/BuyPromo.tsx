@@ -27,6 +27,13 @@ const readConfirmed = (): ConfirmedRecord | null => {
   } catch { return null; }
 };
 
+const VERIFY_MESSAGES = [
+  "Checking payment…",
+  "Confirming transaction…",
+  "Verifying account…",
+  "Almost done…",
+];
+
 const BuyPromo = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -36,6 +43,7 @@ const BuyPromo = () => {
   const [pageState, setPageState] = useState<PageState>("form");
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(10);
+  const [verifyMsgIdx, setVerifyMsgIdx] = useState(0);
 
   // (Admin entry handled by separate /admin-login route)
 
@@ -130,17 +138,22 @@ const BuyPromo = () => {
     }
     if (pageState === "verifying") {
       setCountdown(10);
+      setVerifyMsgIdx(0);
+      const msgInterval = setInterval(() => {
+        setVerifyMsgIdx((i) => (i + 1) % VERIFY_MESSAGES.length);
+      }, 2200);
       const interval = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(interval);
+            clearInterval(msgInterval);
             setPageState("failed");
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-      return () => clearInterval(interval);
+      return () => { clearInterval(interval); clearInterval(msgInterval); };
     }
   }, [pageState]);
 
@@ -164,12 +177,12 @@ const BuyPromo = () => {
           localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code, at: Date.now() }));
           setConfirmedCode(code);
           setPageState("confirmed");
-          addNotification("promo_purchased", `Your activation code is ready. Tap copy to use it. ${code}`);
+          // Global PurchaseSuccessPopup handles the modal; AppContext handles the notification.
         })
         .subscribe();
     })();
     return () => { cancelled = true; if (channel) supabase.removeChannel(channel); };
-  }, [addNotification]);
+  }, []);
 
   const handlePay = () => {
     if (!fullName || !email) {
@@ -255,8 +268,8 @@ const BuyPromo = () => {
           </div>
         </div>
         <h2 className="text-xl font-bold text-foreground">Verifying your payment</h2>
-        <p className="text-primary mt-2 text-center px-8">
-          Please wait while we confirm your bank transfer...
+        <p className="text-primary mt-2 text-center px-8 transition-opacity duration-300" key={verifyMsgIdx}>
+          {VERIFY_MESSAGES[verifyMsgIdx]}
         </p>
       </div>
     );
@@ -280,7 +293,7 @@ const BuyPromo = () => {
             </div>
           </div>
           <p className="relative text-sm mt-4 opacity-95">
-            Purchased successfully 🎊 Your activation code is ready below.
+            Purchased successfully 🎊 Your promo code is ready below.
           </p>
         </div>
 
@@ -294,7 +307,7 @@ const BuyPromo = () => {
         {/* Code card */}
         <div className="w-full max-w-sm mx-auto bg-card border border-border rounded-3xl p-5 mt-3 shadow-sm">
           <p className="text-xs uppercase tracking-widest text-muted-foreground text-center mb-3">
-            Your Activation Code
+            Your Promo Code
           </p>
           <div className="flex items-center justify-between gap-3 bg-green-primary/5 border border-dashed border-green-primary/40 rounded-2xl px-4 py-3">
             <span className="text-2xl font-extrabold text-green-primary tracking-[0.25em]">{confirmedCode}</span>
