@@ -27,6 +27,13 @@ const readConfirmed = (): ConfirmedRecord | null => {
   } catch { return null; }
 };
 
+const VERIFY_MESSAGES = [
+  "Checking payment…",
+  "Confirming transaction…",
+  "Verifying account…",
+  "Almost done…",
+];
+
 const BuyPromo = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -36,6 +43,7 @@ const BuyPromo = () => {
   const [pageState, setPageState] = useState<PageState>("form");
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(10);
+  const [verifyMsgIdx, setVerifyMsgIdx] = useState(0);
 
   // (Admin entry handled by separate /admin-login route)
 
