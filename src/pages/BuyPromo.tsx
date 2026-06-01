@@ -176,13 +176,14 @@ const BuyPromo = () => {
           if (!code) return;
           localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code, at: Date.now() }));
           setConfirmedCode(code);
+          setShowSuccessPopup(true);
           setPageState("confirmed");
-          addNotification("promo_purchased", `Your activation code is ready. Tap copy to use it. ${code}`);
+          // Notification is added globally by AppContext realtime listener (no duplicates).
         })
         .subscribe();
     })();
     return () => { cancelled = true; if (channel) supabase.removeChannel(channel); };
-  }, [addNotification]);
+  }, []);
 
   const handlePay = () => {
     if (!fullName || !email) {
