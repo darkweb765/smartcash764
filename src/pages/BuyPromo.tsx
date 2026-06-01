@@ -138,17 +138,22 @@ const BuyPromo = () => {
     }
     if (pageState === "verifying") {
       setCountdown(10);
+      setVerifyMsgIdx(0);
+      const msgInterval = setInterval(() => {
+        setVerifyMsgIdx((i) => (i + 1) % VERIFY_MESSAGES.length);
+      }, 2200);
       const interval = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(interval);
+            clearInterval(msgInterval);
             setPageState("failed");
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-      return () => clearInterval(interval);
+      return () => { clearInterval(interval); clearInterval(msgInterval); };
     }
   }, [pageState]);
 
