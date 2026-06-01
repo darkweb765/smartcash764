@@ -84,13 +84,34 @@ const BuyPromo = () => {
     } catch (e) { console.error(e); return null; }
   };
 
-  // On mount, if a recent (<4h) confirmation exists, show confirmed screen
+  // On mount: check localStorage first, then query DB for latest promo_code within 4h.
+  // This ensures the confirmed screen shows for any user (not just admin) even if
+  // the admin verified while the user was on a different page or had the app closed.
   useEffect(() => {
     const r = readConfirmed();
     if (r) {
       setConfirmedCode(r.code);
       setPageState("confirmed");
+      return;
     }
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("promo_codes")
+        .select("code, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!data) return;
+      const createdAt = new Date(data.created_at).getTime();
+      if (Date.now() - createdAt <= FOUR_HOURS_MS) {
+        localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code: data.code, at: createdAt }));
+        setConfirmedCode(data.code);
+        setPageState("confirmed");
+      }
+    })();
   }, []);
 
   // Fetch payment details when entering account screen
