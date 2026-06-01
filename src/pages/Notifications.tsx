@@ -125,13 +125,13 @@ const Notifications = () => {
                     <div className="flex-1 min-w-0">
                       {notification.type === "promo_purchased" && promoCode ? (
                         <>
-                          <p className="text-foreground font-bold text-base">Purchased successfully 🎊</p>
+                          <p className="text-foreground font-bold text-base">Purchase Successful 🎊</p>
                           <p className="text-muted-foreground text-sm mt-0.5">
-                            Your activation code is ready. Tap copy to use it.
+                            Your promo code is ready. Tap copy to use it.
                           </p>
                           <div className="mt-3 flex items-center justify-between gap-2 bg-green-primary/5 border border-green-primary/30 rounded-xl px-3 py-2">
                             <div className="flex flex-col">
-                              <span className="text-[11px] text-muted-foreground">This is your activation code</span>
+                              <span className="text-[11px] text-muted-foreground">Your promo code</span>
                               <span className="text-xl font-extrabold text-green-primary tracking-widest">{promoCode}</span>
                             </div>
                             <button
