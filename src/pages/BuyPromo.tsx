@@ -268,8 +268,8 @@ const BuyPromo = () => {
           </div>
         </div>
         <h2 className="text-xl font-bold text-foreground">Verifying your payment</h2>
-        <p className="text-primary mt-2 text-center px-8">
-          Please wait while we confirm your bank transfer...
+        <p className="text-primary mt-2 text-center px-8 transition-opacity duration-300" key={verifyMsgIdx}>
+          {VERIFY_MESSAGES[verifyMsgIdx]}
         </p>
       </div>
     );
