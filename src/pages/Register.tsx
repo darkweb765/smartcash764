@@ -46,8 +46,10 @@ const Register = () => {
 
     setLoading(true);
 
+    await supabase.auth.signOut();
+
     const { error } = await supabase.auth.signUp({
-      email,
+      email: email.trim().toLowerCase(),
       password,
       options: {
         emailRedirectTo: window.location.origin,
@@ -62,7 +64,9 @@ const Register = () => {
     if (error) {
       toast({
         title: "Registration Failed",
-        description: error.message,
+        description: error.message.toLowerCase().includes("already")
+          ? "User already exists, please login"
+          : error.message,
         variant: "destructive",
       });
     } else {
