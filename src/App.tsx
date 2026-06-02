@@ -83,6 +83,7 @@ const AppRoutes = () => {
       if (event === "SIGNED_OUT") {
         // Clear per-user app data so the next account starts fresh
         APP_KEYS.forEach((k) => localStorage.removeItem(k));
+        localStorage.removeItem(LAST_USER_KEY);
       }
       setSession(session);
     });
