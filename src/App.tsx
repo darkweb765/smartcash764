@@ -48,15 +48,42 @@ const AppRoutes = () => {
   useEffect(() => {
     let mounted = true;
 
+    const APP_KEYS = [
+      "smartcash_balance",
+      "smartcash_gift_claimed",
+      "smartcash_notifications",
+      "smartpay_payment_confirmed",
+      "smartpay_purchase_popup_dismissed_codes",
+    ];
+    const LAST_USER_KEY = "smartpay_last_user_id";
+
+    const reconcileUser = (session: Session | null) => {
+      const uid = session?.user?.id ?? null;
+      const prev = localStorage.getItem(LAST_USER_KEY);
+      if (uid && prev && prev !== uid) {
+        // Different user signed in — wipe previous user's local data
+        APP_KEYS.forEach((k) => localStorage.removeItem(k));
+      }
+      if (uid) localStorage.setItem(LAST_USER_KEY, uid);
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
+      reconcileUser(session);
       setSession(session);
       setCheckingAuth(false);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        reconcileUser(session);
+      }
+      if (event === "SIGNED_OUT") {
+        // Clear per-user app data so the next account starts fresh
+        APP_KEYS.forEach((k) => localStorage.removeItem(k));
+      }
       setSession(session);
     });
 
@@ -65,6 +92,7 @@ const AppRoutes = () => {
       subscription.unsubscribe();
     };
   }, []);
+
 
   if (checkingAuth) {
     return (
