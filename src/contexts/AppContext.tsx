@@ -22,7 +22,6 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const balanceHook = useBalance();
   const notificationsHook = useNotifications();
-  const { addNotification } = notificationsHook;
 
   // Global realtime listener: fires when admin verifies/activates the user's promo
   useEffect(() => {
@@ -115,7 +114,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [addNotification]);
+  }, []);
 
   return (
     <AppContext.Provider
