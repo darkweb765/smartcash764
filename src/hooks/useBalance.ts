@@ -1,28 +1,88 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const STORAGE_KEY = "smartcash_balance";
-const CLAIMED_KEY = "smartcash_gift_claimed";
 const TARGET_BALANCE = 150000;
 
 export const useBalance = () => {
-  const [balance, setBalance] = useState<number>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? parseFloat(saved) : 0;
-  });
-
-  const [isClaimed, setIsClaimed] = useState<boolean>(() => {
-    return localStorage.getItem(CLAIMED_KEY) === "true";
-  });
-
+  const [userId, setUserId] = useState<string | null>(null);
+  const [balance, setBalance] = useState<number>(0);
+  const [isClaimed, setIsClaimed] = useState<boolean>(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const saveTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, balance.toString());
-  }, [balance]);
+    let mounted = true;
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (mounted) setUserId(user?.id ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextUserId = session?.user?.id ?? null;
+      setUserId(nextUserId);
+      if (!nextUserId) {
+        setBalance(0);
+        setIsClaimed(false);
+        setIsAnimating(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(CLAIMED_KEY, isClaimed.toString());
-  }, [isClaimed]);
+    let cancelled = false;
+
+    const loadState = async () => {
+      if (!userId) return;
+
+      const { data, error } = await supabase
+        .from("user_app_state")
+        .select("balance, gift_claimed")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error("Error loading app state:", error);
+      }
+
+      if (!data) {
+        await supabase.from("user_app_state").upsert({ user_id: userId, balance: 0, gift_claimed: false });
+        if (!cancelled) {
+          setBalance(0);
+          setIsClaimed(false);
+        }
+        return;
+      }
+
+      setBalance(Number(data.balance || 0));
+      setIsClaimed(Boolean(data.gift_claimed));
+    };
+
+    loadState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  const persistState = useCallback((nextBalance: number, nextClaimed: boolean) => {
+    if (!userId) return;
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => {
+      supabase
+        .from("user_app_state")
+        .upsert({ user_id: userId, balance: nextBalance, gift_claimed: nextClaimed })
+        .then(({ error }) => {
+          if (error) console.error("Error saving app state:", error);
+        });
+    }, 150);
+  }, [userId]);
 
   const claimGift = useCallback((): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -49,15 +109,20 @@ export const useBalance = () => {
           setBalance(TARGET_BALANCE);
           setIsClaimed(true);
           setIsAnimating(false);
+          persistState(TARGET_BALANCE, true);
           resolve(true);
         }
       }, intervalTime);
     });
-  }, [isClaimed, isAnimating]);
+  }, [isClaimed, isAnimating, persistState]);
 
   const deductBalance = useCallback((amount: number) => {
-    setBalance((prev) => Math.max(0, prev - amount));
-  }, []);
+    setBalance((prev) => {
+      const next = Math.max(0, prev - amount);
+      persistState(next, isClaimed);
+      return next;
+    });
+  }, [isClaimed, persistState]);
 
   return {
     balance,
