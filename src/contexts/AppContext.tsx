@@ -33,6 +33,34 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) return;
 
+      // Backfill: ensure every existing promo code has a notification entry
+      try {
+        const { data: codes } = await supabase
+          .from("promo_codes")
+          .select("code, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+        if (codes && codes.length) {
+          const existing = JSON.parse(localStorage.getItem("smartcash_notifications") || "[]");
+          const have = new Set(
+            existing
+              .filter((n: any) => n.type === "promo_purchased")
+              .map((n: any) => {
+                const m = String(n.message || "").match(/PEF\d{5}/);
+                return m ? m[0] : null;
+              })
+              .filter(Boolean)
+          );
+          for (const row of codes) {
+            if (!have.has(row.code)) {
+              addNotification("promo_purchased", `Your promo code is ready. Tap copy to use it. ${row.code}`);
+            }
+          }
+        }
+      } catch {}
+
+
+
       channel = supabase
         .channel("user-promo-status-" + user.id)
         // New promo code = admin verified payment
