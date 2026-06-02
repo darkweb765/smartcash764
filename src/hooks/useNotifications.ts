@@ -39,7 +39,7 @@ export const useNotifications = () => {
 
     const mapRow = (row: any): Notification => ({
       id: row.id,
-      type: row.type,
+      type: row.type as Notification["type"],
       message: row.message,
       amount: row.amount == null ? undefined : Number(row.amount),
       timestamp: new Date(row.created_at).getTime(),
