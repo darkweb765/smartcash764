@@ -273,6 +273,63 @@ export type Database = {
         }
         Relationships: []
       }
+      user_app_state: {
+        Row: {
+          balance: number
+          created_at: string
+          gift_claimed: boolean
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          gift_claimed?: boolean
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          gift_claimed?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_notifications: {
+        Row: {
+          amount: number | null
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       withdrawal_requests: {
         Row: {
           account_name: string
