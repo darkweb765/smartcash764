@@ -22,7 +22,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const balanceHook = useBalance();
   const notificationsHook = useNotifications();
-  const { addNotification } = notificationsHook;
+  const { addNotification, notifications } = notificationsHook;
 
   // Global realtime listener: fires when admin verifies/activates the user's promo
   useEffect(() => {
@@ -41,9 +41,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
         if (codes && codes.length) {
-          const existing = JSON.parse(localStorage.getItem("smartcash_notifications") || "[]");
           const have = new Set(
-            existing
+            notifications
               .filter((n: any) => n.type === "promo_purchased")
               .map((n: any) => {
                 const m = String(n.message || "").match(/PEF\d{5}/);
@@ -108,7 +107,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [addNotification]);
+  }, [addNotification, notifications]);
 
   return (
     <AppContext.Provider
