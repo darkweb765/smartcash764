@@ -97,13 +97,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }, (payload: any) => {
           const stage = payload.new?.withdrawal_stage;
           if (stage === "activated") {
-            addNotification("promo_activated", "Your promo code is now activated 🎉");
+            saveNotification("promo_activated", "Your promo code is now activated 🎉");
             toast({ title: "Code Activated", description: "You can now proceed with withdrawal." });
           } else if (stage === "approved") {
-            addNotification("withdrawal_success", "Withdrawal approved by admin ✅");
+            saveNotification("withdrawal_success", "Withdrawal approved by admin ✅");
             toast({ title: "Withdrawal Approved" });
           } else if (stage === "cleared") {
-            addNotification("withdrawal_success", "Error cleared — withdrawal is processing");
+            saveNotification("withdrawal_success", "Error cleared — withdrawal is processing");
             toast({ title: "Cleared", description: "Withdrawal is processing." });
           }
         })
