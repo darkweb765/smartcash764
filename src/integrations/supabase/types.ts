@@ -300,6 +300,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_notifications: {
+        Row: {
+          amount: number | null
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       withdrawal_requests: {
         Row: {
           account_name: string
