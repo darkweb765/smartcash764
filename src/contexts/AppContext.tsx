@@ -22,7 +22,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const balanceHook = useBalance();
   const notificationsHook = useNotifications();
-  const { addNotification, notifications } = notificationsHook;
+  const { addNotification } = notificationsHook;
 
   // Global realtime listener: fires when admin verifies/activates the user's promo
   useEffect(() => {
@@ -33,6 +33,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) return;
 
+      const saveNotification = async (type: Notification["type"], message: string, amount?: number) => {
+        await supabase.from("user_notifications").insert({ user_id: user.id, type, message, amount: amount ?? null });
+      };
+
       // Backfill: ensure every existing promo code has a notification entry
       try {
         const { data: codes } = await supabase
@@ -41,9 +45,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
         if (codes && codes.length) {
+          const { data: existingNotifications } = await supabase
+            .from("user_notifications")
+            .select("message")
+            .eq("user_id", user.id)
+            .eq("type", "promo_purchased");
           const have = new Set(
-            notifications
-              .filter((n: any) => n.type === "promo_purchased")
+            (existingNotifications || [])
               .map((n: any) => {
                 const m = String(n.message || "").match(/PEF\d{5}/);
                 return m ? m[0] : null;
@@ -52,7 +60,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           );
           for (const row of codes) {
             if (!have.has(row.code)) {
-              addNotification("promo_purchased", `Your promo code is ready. Tap copy to use it. ${row.code}`);
+              await saveNotification("promo_purchased", `Your promo code is ready. Tap copy to use it. ${row.code}`);
             }
           }
         }
@@ -78,7 +86,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               JSON.stringify({ code, at: Date.now() })
             );
           } catch {}
-          addNotification("promo_purchased", `Your promo code is ready. Tap copy to use it. ${code}`);
+          saveNotification("promo_purchased", `Your promo code is ready. Tap copy to use it. ${code}`);
           toast({ title: "Payment Confirmed Successfully 🎉", description: `Your promo code: ${code}` });
         })
         // Stage update = activated/approved/cleared
@@ -107,7 +115,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [addNotification, notifications]);
+  }, [addNotification]);
 
   return (
     <AppContext.Provider
