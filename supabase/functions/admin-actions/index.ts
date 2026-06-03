@@ -445,9 +445,10 @@ Deno.serve(async (req) => {
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (existingCode) {
-          const codeCreatedAt = new Date(existingCode.created_at).getTime();
-          const withinCooldown = Date.now() - codeCreatedAt <= PURCHASE_CONFIRMATION_TTL_MS;
+        const withinCooldown = existingCode
+          ? Date.now() - new Date(existingCode.created_at).getTime() <= PURCHASE_CONFIRMATION_TTL_MS
+          : false;
+        if (existingCode && withinCooldown) {
           await supabase.from("promo_purchases").update({ status: "verified", verified_at: new Date().toISOString() }).eq("id", purchase_id);
           await saveUserNotification(supabase, purchase.user_id, "promo_purchased", `Your promo code is ready. Tap copy to use it. ${existingCode.code}`);
           return json({ success: true, code: existingCode.code, user_id: purchase.user_id, duplicate: true });
