@@ -33,6 +33,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (!user || cancelled) return;
 
       const saveNotification = async (type: Notification["type"], message: string, amount?: number) => {
+        const { data: existing } = await supabase
+          .from("user_notifications")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("type", type)
+          .eq("message", message)
+          .limit(1);
+        if (existing?.length) return;
         await supabase.from("user_notifications").insert({ user_id: user.id, type, message, amount: amount ?? null });
       };
 
@@ -86,6 +94,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             );
           } catch {}
           saveNotification("promo_purchased", `Your promo code is ready. Tap copy to use it. ${code}`);
+          toast({ title: "Payment Confirmed Successfully 🎉", description: `Your promo code: ${code}` });
+        })
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "user_notifications",
+          filter: `user_id=eq.${user.id}`,
+        }, (payload: any) => {
+          if (payload.new?.type !== "promo_purchased") return;
+          const code = String(payload.new?.message || "").match(/PEF\d{5}/)?.[0];
+          if (!code) return;
+          try {
+            localStorage.setItem(
+              "smartpay_payment_confirmed",
+              JSON.stringify({ code, at: new Date(payload.new.created_at || Date.now()).getTime() })
+            );
+          } catch {}
           toast({ title: "Payment Confirmed Successfully 🎉", description: `Your promo code: ${code}` });
         })
         // Stage update = activated/approved/cleared

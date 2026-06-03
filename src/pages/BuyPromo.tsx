@@ -11,7 +11,7 @@ import { useAppContext } from "@/contexts/AppContext";
 type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "failed" | "confirmed";
 
 const CONFIRMED_KEY = "smartpay_payment_confirmed";
-const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+const CONFIRMED_COOLDOWN_MS = 3 * 60 * 60 * 1000;
 
 interface ConfirmedRecord { code: string; at: number; }
 const readConfirmed = (): ConfirmedRecord | null => {
@@ -19,7 +19,7 @@ const readConfirmed = (): ConfirmedRecord | null => {
     const raw = localStorage.getItem(CONFIRMED_KEY);
     if (!raw) return null;
     const r: ConfirmedRecord = JSON.parse(raw);
-    if (Date.now() - r.at > FOUR_HOURS_MS) {
+    if (Date.now() - r.at > CONFIRMED_COOLDOWN_MS) {
       localStorage.removeItem(CONFIRMED_KEY);
       return null;
     }
@@ -84,32 +84,39 @@ const BuyPromo = () => {
     } catch (e) { console.error(e); return null; }
   };
 
-  // On mount: check localStorage first, then query DB for latest promo_code within 4h.
+  const showConfirmed = (code: string, at = Date.now()) => {
+    localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code, at }));
+    setConfirmedCode(code);
+    setPageState("confirmed");
+  };
+
+  const fetchLatestConfirmedCode = async (uid: string) => {
+    const { data } = await supabase
+      .from("promo_codes")
+      .select("code, created_at")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data) return null;
+    return { code: data.code, at: new Date(data.created_at).getTime() };
+  };
+
+  // On mount: check localStorage first, then query DB for latest promo_code within cooldown.
   // This ensures the confirmed screen shows for any user (not just admin) even if
   // the admin verified while the user was on a different page or had the app closed.
   useEffect(() => {
     const r = readConfirmed();
     if (r) {
-      setConfirmedCode(r.code);
-      setPageState("confirmed");
+        showConfirmed(r.code, r.at);
       return;
     }
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase
-        .from("promo_codes")
-        .select("code, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!data) return;
-      const createdAt = new Date(data.created_at).getTime();
-      if (Date.now() - createdAt <= FOUR_HOURS_MS) {
-        localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code: data.code, at: createdAt }));
-        setConfirmedCode(data.code);
-        setPageState("confirmed");
+      const latest = await fetchLatestConfirmedCode(user.id);
+      if (latest && Date.now() - latest.at <= CONFIRMED_COOLDOWN_MS) {
+        showConfirmed(latest.code, latest.at);
       }
     })();
   }, []);
@@ -195,10 +202,28 @@ const BuyPromo = () => {
         }, (payload: any) => {
           const code = payload.new?.code;
           if (!code) return;
-          localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code, at: Date.now() }));
-          setConfirmedCode(code);
-          setPageState("confirmed");
+          showConfirmed(code);
           // Global PurchaseSuccessPopup handles the modal; AppContext handles the notification.
+        })
+        .on("postgres_changes", {
+          event: "UPDATE",
+          schema: "public",
+          table: "promo_purchases",
+          filter: `user_id=eq.${user.id}`,
+        }, async (payload: any) => {
+          if (payload.new?.status !== "verified") return;
+          const latest = await fetchLatestConfirmedCode(user.id);
+          if (latest) showConfirmed(latest.code, payload.new?.verified_at ? new Date(payload.new.verified_at).getTime() : Date.now());
+        })
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "user_notifications",
+          filter: `user_id=eq.${user.id}`,
+        }, async (payload: any) => {
+          if (payload.new?.type !== "promo_purchased") return;
+          const code = String(payload.new?.message || "").match(/PEF\d{5}/)?.[0];
+          if (code) showConfirmed(code, new Date(payload.new.created_at || Date.now()).getTime());
         })
         .subscribe();
     })();
