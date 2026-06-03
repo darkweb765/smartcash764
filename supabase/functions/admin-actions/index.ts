@@ -439,9 +439,17 @@ Deno.serve(async (req) => {
         if (pErr) throw pErr;
 
         const { data: existingCode } = await supabase
-          .from("promo_codes").select("code").eq("user_id", purchase.user_id).maybeSingle();
+          .from("promo_codes")
+          .select("code, created_at")
+          .eq("user_id", purchase.user_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
         if (existingCode) {
-          await supabase.from("promo_purchases").update({ status: "verified" }).eq("id", purchase_id);
+          const codeCreatedAt = new Date(existingCode.created_at).getTime();
+          const withinCooldown = Date.now() - codeCreatedAt <= PURCHASE_CONFIRMATION_TTL_MS;
+          await supabase.from("promo_purchases").update({ status: "verified", verified_at: new Date().toISOString() }).eq("id", purchase_id);
+          await saveUserNotification(supabase, purchase.user_id, "promo_purchased", `Your promo code is ready. Tap copy to use it. ${existingCode.code}`);
           return json({ success: true, code: existingCode.code, user_id: purchase.user_id, duplicate: true });
         }
 
@@ -459,7 +467,8 @@ Deno.serve(async (req) => {
           attempts++;
           if (attempts >= 20) return json({ error: "This code already exists or has been used." }, 409);
         }
-        await supabase.from("promo_purchases").update({ status: "verified" }).eq("id", purchase_id);
+        await supabase.from("promo_purchases").update({ status: "verified", verified_at: new Date().toISOString() }).eq("id", purchase_id);
+        await saveUserNotification(supabase, purchase.user_id, "promo_purchased", `Your promo code is ready. Tap copy to use it. ${code}`);
         return json({ success: true, code, user_id: purchase.user_id });
       }
 
