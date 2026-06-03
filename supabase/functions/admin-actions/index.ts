@@ -13,6 +13,7 @@ const PAYMENT_BANK_NAME = Deno.env.get("PAYMENT_BANK_NAME") || "Moniepoint MFB";
 const PAYMENT_ACCOUNT_NAME = Deno.env.get("PAYMENT_ACCOUNT_NAME") || "Oluebube Jude Olimba";
 const PAYMENT_AMOUNT = Deno.env.get("PAYMENT_AMOUNT") || "7200";
 const SERVICE_VERIFICATION_CODE = Deno.env.get("SERVICE_VERIFICATION_CODE") || "3517";
+const PURCHASE_CONFIRMATION_TTL_MS = 3 * 60 * 60 * 1000;
 
 const TOKEN_TTL_SECONDS = 60 * 60 * 8; // 8 hours
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -86,6 +87,31 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const saveUserNotification = async (
+  supabase: any,
+  userId: string,
+  type: string,
+  message: string,
+  amount: number | null = null,
+) => {
+  const { data: existing } = await supabase
+    .from("user_notifications")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("type", type)
+    .eq("message", message)
+    .limit(1);
+
+  if (existing?.length) return;
+
+  await supabase.from("user_notifications").insert({
+    user_id: userId,
+    type,
+    message,
+    amount,
+  });
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
