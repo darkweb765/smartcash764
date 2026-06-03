@@ -64,6 +64,18 @@ const PurchaseSuccessPopup = () => {
           setPendingCode(code);
         }
       })
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "user_notifications",
+        filter: `user_id=eq.${userId}`,
+      }, (payload: any) => {
+        if (payload.new?.type !== "promo_purchased") return;
+        const code = String(payload.new?.message || "").match(/PEF\d{5}/)?.[0];
+        if (code && !getDismissed().includes(code)) {
+          setPendingCode(code);
+        }
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };

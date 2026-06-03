@@ -207,22 +207,13 @@ const AdminPanel = () => {
   useEffect(() => {
     const channel = supabase
       .channel("admin-panel-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "promo_purchases" }, () => {
-        if (tab === "users") fetchData();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "promo_codes" }, () => {
-        refreshAlertCount();
-        if (tab === "alerts") fetchData();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "withdrawal_requests" }, () => {
-        refreshAlertCount();
-        if (tab === "alerts") fetchData();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, () => {
-        if (tab === "reports") fetchData();
-      })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, () => {
-        if (tab === "livechat" && !activeChatUserId) fetchData();
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "admin_realtime_events" }, (payload: any) => {
+        const tableName = payload.new?.table_name;
+        if (tableName === "promo_codes" || tableName === "withdrawal_requests") refreshAlertCount();
+        if (tableName === "promo_purchases" && tab === "users") fetchData();
+        if ((tableName === "promo_codes" || tableName === "withdrawal_requests") && tab === "alerts") fetchData();
+        if (tableName === "support_tickets" && tab === "reports") fetchData();
+        if (tableName === "chat_messages" && tab === "livechat" && !activeChatUserId) fetchData();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
