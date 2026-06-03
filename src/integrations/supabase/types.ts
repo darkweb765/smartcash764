@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_realtime_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          table_name: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          table_name: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       admin_sessions: {
         Row: {
           admin_id: string
