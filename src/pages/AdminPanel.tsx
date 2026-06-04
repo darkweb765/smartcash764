@@ -382,9 +382,10 @@ const AdminPanel = () => {
   };
 
   const deleteMasterCode = async (id: string) => {
-    const res = await callAdmin("POST", "", { action: "delete_master_code", id }, "&action=delete_master_code");
+    const res = await callAdmin("POST", "delete_master_code", { id });
     if (res?.success) loadMasterCodes();
   };
+
 
 
   // Realtime: keep account form/live in sync
