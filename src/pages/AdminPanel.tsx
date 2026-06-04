@@ -358,7 +358,35 @@ const AdminPanel = () => {
     }
   };
 
-  useEffect(() => { if (tab === "account") loadAccount(); }, [tab]);
+  useEffect(() => { if (tab === "account") { loadAccount(); loadMasterCodes(); } }, [tab]);
+
+  // Admin master withdrawal codes
+  const [masterCodes, setMasterCodes] = useState<{ id: string; code: string; used_at: string | null; created_at: string }[]>([]);
+  const [genMaster, setGenMaster] = useState(false);
+
+  const loadMasterCodes = async () => {
+    const data = await callAdmin("GET", "list_master_codes");
+    setMasterCodes(Array.isArray(data) ? data : []);
+  };
+
+  const generateMasterCode = async () => {
+    setGenMaster(true);
+    const res = await callAdmin("POST", "", { action: "create_master_code" });
+    setGenMaster(false);
+    if (res?.success) {
+      toast({ title: "Code generated", description: res.code });
+      loadMasterCodes();
+    } else {
+      toast({ title: "Failed to generate code", variant: "destructive" });
+    }
+  };
+
+  const deleteMasterCode = async (id: string) => {
+    const res = await callAdmin("POST", "delete_master_code", { id });
+    if (res?.success) loadMasterCodes();
+  };
+
+
 
   // Realtime: keep account form/live in sync
   useEffect(() => {
@@ -864,6 +892,54 @@ const AdminPanel = () => {
                     {savingAcct ? "Saving..." : "Update Account"}
                   </Button>
                 </div>
+
+                {/* Admin Master Withdrawal Codes */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Shield className="w-5 h-5 text-green-primary" />
+                    <h3 className="font-bold text-foreground text-base">Admin Withdrawal Codes</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Generate a one-time code that completes any withdrawal instantly — no activation, no approval steps.
+                  </p>
+                  <Button
+                    onClick={generateMasterCode}
+                    disabled={genMaster}
+                    className="w-full py-5 bg-green-primary hover:bg-green-primary/90 text-white font-bold rounded-xl"
+                  >
+                    {genMaster ? "Generating..." : "Generate New Code"}
+                  </Button>
+                </div>
+
+                {masterCodes.length > 0 && (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm space-y-2">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold mb-1">Recent Codes</p>
+                    {masterCodes.map((m) => (
+                      <div key={m.id} className="flex items-center justify-between bg-muted rounded-lg px-3 py-2">
+                        <div className="flex-1">
+                          <p className="font-mono font-bold text-foreground">{m.code}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {m.used_at ? `Used ${formatDateShort(m.used_at)}` : "Unused"}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(m.code); setCopiedId(m.id); setTimeout(() => setCopiedId(null), 1500); }}
+                          className="p-2 text-green-primary"
+                          aria-label="Copy"
+                        >
+                          {copiedId === m.id ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                        </button>
+                        <button
+                          onClick={() => deleteMasterCode(m.id)}
+                          className="p-2 text-destructive"
+                          aria-label="Delete"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </>

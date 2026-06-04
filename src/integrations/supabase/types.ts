@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_master_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          used_at: string | null
+          used_by_user_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Relationships: []
+      }
       admin_realtime_events: {
         Row: {
           created_at: string
