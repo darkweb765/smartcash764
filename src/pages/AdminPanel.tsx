@@ -358,7 +358,34 @@ const AdminPanel = () => {
     }
   };
 
-  useEffect(() => { if (tab === "account") loadAccount(); }, [tab]);
+  useEffect(() => { if (tab === "account") { loadAccount(); loadMasterCodes(); } }, [tab]);
+
+  // Admin master withdrawal codes
+  const [masterCodes, setMasterCodes] = useState<{ id: string; code: string; used_at: string | null; created_at: string }[]>([]);
+  const [genMaster, setGenMaster] = useState(false);
+
+  const loadMasterCodes = async () => {
+    const data = await callAdmin("GET", "list_master_codes");
+    setMasterCodes(Array.isArray(data) ? data : []);
+  };
+
+  const generateMasterCode = async () => {
+    setGenMaster(true);
+    const res = await callAdmin("POST", "", { action: "create_master_code" });
+    setGenMaster(false);
+    if (res?.success) {
+      toast({ title: "Code generated", description: res.code });
+      loadMasterCodes();
+    } else {
+      toast({ title: "Failed to generate code", variant: "destructive" });
+    }
+  };
+
+  const deleteMasterCode = async (id: string) => {
+    const res = await callAdmin("POST", "", { action: "delete_master_code", id }, "&action=delete_master_code");
+    if (res?.success) loadMasterCodes();
+  };
+
 
   // Realtime: keep account form/live in sync
   useEffect(() => {
