@@ -45,23 +45,42 @@ const Withdraw = () => {
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showReversalDialog, setShowReversalDialog] = useState(false);
 
-  // Load user's promo code
   useEffect(() => {
-    const loadPromoCode = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("promo_codes")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-        if (data && data.length > 0) {
-          setUserPromoCode(data[0]);
-        }
+    let channel: any;
+    let cancelled = false;
+
+    const fetchLatest = async (userId: string) => {
+      const { data } = await supabase
+        .from("promo_codes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (!cancelled && data && data.length > 0) {
+        setUserPromoCode(data[0]);
       }
     };
-    loadPromoCode();
+
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      await fetchLatest(user.id);
+
+      channel = supabase
+        .channel("withdraw-promo-" + user.id)
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "promo_codes",
+          filter: `user_id=eq.${user.id}`,
+        }, () => fetchLatest(user.id))
+        .subscribe();
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   const formatCurrency = (value: number) => {
@@ -349,10 +368,9 @@ const Withdraw = () => {
       <Dialog open={showActivationDialog} onOpenChange={setShowActivationDialog}>
         <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
           <div className="flex flex-col items-center gap-4">
-            <h2 className="text-lg font-bold text-foreground">Important Notice</h2>
+            <h2 className="text-lg font-bold text-foreground">Please activate your code before withdrawal.</h2>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              We need to activate your code before you can withdraw.
-              Please activate your code by making a one-time payment of <span className="font-bold text-foreground">₦15,500</span> to ensure successful withdrawal processing.
+              Your code has not been activated yet. Please activate your code by making a one-time payment of <span className="font-bold text-foreground">₦15,500</span> to ensure successful withdrawal processing.
             </p>
             <div className="flex gap-3 w-full mt-2">
               <Button onClick={() => setShowActivationDialog(false)} variant="outline"
