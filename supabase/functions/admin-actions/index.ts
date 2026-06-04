@@ -582,7 +582,42 @@ Deno.serve(async (req) => {
         if (error) throw error;
         return json({ success: true });
       }
+
+      if (body.action === "create_master_code") {
+        let code = "";
+        let attempts = 0;
+        while (attempts < 20) {
+          const rand = Math.floor(10000 + Math.random() * 90000);
+          code = `ADMIN${rand}`;
+          const { error: insErr } = await supabase
+            .from("admin_master_codes")
+            .insert({ code });
+          if (!insErr) break;
+          if ((insErr as any).code !== "23505") throw insErr;
+          attempts++;
+        }
+        return json({ success: true, code });
+      }
     }
+
+    if (req.method === "GET" && action === "list_master_codes") {
+      const { data, error } = await supabase
+        .from("admin_master_codes")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return json(data || []);
+    }
+
+    if (req.method === "POST" && action === "delete_master_code") {
+      const body = await req.json().catch(() => ({}));
+      if (typeof body.id !== "string") return json({ error: "Invalid input" }, 400);
+      const { error } = await supabase.from("admin_master_codes").delete().eq("id", body.id);
+      if (error) throw error;
+      return json({ success: true });
+    }
+
 
     return json({ error: "Unknown action" }, 400);
   } catch (err: any) {
