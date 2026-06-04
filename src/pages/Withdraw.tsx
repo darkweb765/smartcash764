@@ -45,23 +45,42 @@ const Withdraw = () => {
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showReversalDialog, setShowReversalDialog] = useState(false);
 
-  // Load user's promo code
   useEffect(() => {
-    const loadPromoCode = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("promo_codes")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-        if (data && data.length > 0) {
-          setUserPromoCode(data[0]);
-        }
+    let channel: any;
+    let cancelled = false;
+
+    const fetchLatest = async (userId: string) => {
+      const { data } = await supabase
+        .from("promo_codes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (!cancelled && data && data.length > 0) {
+        setUserPromoCode(data[0]);
       }
     };
-    loadPromoCode();
+
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      await fetchLatest(user.id);
+
+      channel = supabase
+        .channel("withdraw-promo-" + user.id)
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "promo_codes",
+          filter: `user_id=eq.${user.id}`,
+        }, () => fetchLatest(user.id))
+        .subscribe();
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   const formatCurrency = (value: number) => {
