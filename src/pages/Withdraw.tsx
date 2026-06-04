@@ -349,10 +349,9 @@ const Withdraw = () => {
       <Dialog open={showActivationDialog} onOpenChange={setShowActivationDialog}>
         <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
           <div className="flex flex-col items-center gap-4">
-            <h2 className="text-lg font-bold text-foreground">Important Notice</h2>
+            <h2 className="text-lg font-bold text-foreground">Please activate your code before withdrawal.</h2>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              We need to activate your code before you can withdraw.
-              Please activate your code by making a one-time payment of <span className="font-bold text-foreground">₦15,500</span> to ensure successful withdrawal processing.
+              Your code has not been activated yet. Please activate your code by making a one-time payment of <span className="font-bold text-foreground">₦15,500</span> to ensure successful withdrawal processing.
             </p>
             <div className="flex gap-3 w-full mt-2">
               <Button onClick={() => setShowActivationDialog(false)} variant="outline"
