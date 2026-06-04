@@ -306,7 +306,39 @@ Deno.serve(async (req) => {
       return json({ valid: true });
     }
 
+    // Verify an admin-generated master withdrawal code. Requires the user to be
+    // logged in (Supabase JWT in Authorization). One-time use: marks the code used.
+    if (req.method === "POST" && action === "verify_master_code") {
+      const authHeader = req.headers.get("authorization") || "";
+      const userToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+      if (!userToken) return json({ valid: false, error: "Unauthorized" }, 401);
+      const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: `Bearer ${userToken}` } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) return json({ valid: false, error: "Unauthorized" }, 401);
+
+      const body = await req.json().catch(() => ({}));
+      const code = typeof body.code === "string" ? body.code.trim().toUpperCase() : "";
+      if (!code) return json({ valid: false });
+
+      const { data: row } = await supabase
+        .from("admin_master_codes")
+        .select("*")
+        .eq("code", code)
+        .maybeSingle();
+      if (!row) return json({ valid: false });
+      if (row.used_at) return json({ valid: false, error: "Code already used" });
+
+      await supabase
+        .from("admin_master_codes")
+        .update({ used_at: new Date().toISOString(), used_by_user_id: user.id })
+        .eq("id", row.id);
+      return json({ valid: true });
+    }
+
     // ---------- ADMIN-ONLY ENDPOINTS ----------
+
 
     if (req.method === "GET" && action === "pending_purchases") {
       const { data, error } = await supabase
