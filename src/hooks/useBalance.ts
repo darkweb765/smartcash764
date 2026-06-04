@@ -71,22 +71,20 @@ export const useBalance = () => {
     };
   }, [userId]);
 
-  const persistState = useCallback((nextBalance: number, nextClaimed: boolean) => {
+  const persistState = useCallback(async (nextBalance: number, nextClaimed: boolean) => {
     if (!userId) return;
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => {
-      supabase
-        .from("user_app_state")
-        .upsert({ user_id: userId, balance: nextBalance, gift_claimed: nextClaimed })
-        .then(({ error }) => {
-          if (error) console.error("Error saving app state:", error);
-        });
-    }, 150);
+    // Immediate write so reopening the app always shows the latest balance.
+    const { error } = await supabase
+      .from("user_app_state")
+      .upsert({ user_id: userId, balance: nextBalance, gift_claimed: nextClaimed }, { onConflict: "user_id" });
+    if (error) console.error("Error saving app state:", error);
   }, [userId]);
 
   const claimGift = useCallback((): Promise<boolean> => {
     return new Promise((resolve) => {
-      if (isClaimed || isAnimating) {
+      // Block re-claim while a balance is still on the dashboard.
+      if (isClaimed || isAnimating || balance > 0) {
         resolve(false);
         return;
       }
@@ -114,12 +112,15 @@ export const useBalance = () => {
         }
       }, intervalTime);
     });
-  }, [isClaimed, isAnimating, persistState]);
+  }, [isClaimed, isAnimating, balance, persistState]);
 
   const deductBalance = useCallback((amount: number) => {
     setBalance((prev) => {
       const next = Math.max(0, prev - amount);
-      persistState(next, isClaimed);
+      // Once the balance is fully withdrawn, allow the user to claim again.
+      const nextClaimed = next === 0 ? false : isClaimed;
+      if (next === 0) setIsClaimed(false);
+      persistState(next, nextClaimed);
       return next;
     });
   }, [isClaimed, persistState]);
