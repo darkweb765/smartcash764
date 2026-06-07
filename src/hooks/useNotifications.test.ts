@@ -182,7 +182,7 @@ describe("useNotifications", () => {
       await flush();
     });
 
-    await waitFor(() => expect(result.current.notifications).toHaveLength(1));
+    expect(result.current.notifications).toHaveLength(1);
     expect(result.current.unreadCount).toBe(1);
     expect(unhandled).toHaveLength(0);
   });
