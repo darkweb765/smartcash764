@@ -89,7 +89,7 @@ describe("useNotifications", () => {
     unmount();
 
     await act(async () => {
-      getUserResolver({ data: { user: { id: "user-1" } } });
+      h.getUserResolver({ data: { user: { id: "user-1" } } });
       await flush();
     });
 
@@ -101,7 +101,7 @@ describe("useNotifications", () => {
     const { result, unmount } = renderHook(() => useNotifications());
 
     await act(async () => {
-      getUserResolver({ data: { user: { id: "user-1" } } });
+      h.getUserResolver({ data: { user: { id: "user-1" } } });
       await flush();
     });
 
@@ -109,7 +109,7 @@ describe("useNotifications", () => {
     unmount();
 
     await act(async () => {
-      loadResolver({
+      h.loadResolver({
         data: [
           {
             id: "n1",
@@ -133,7 +133,7 @@ describe("useNotifications", () => {
     const { unmount } = renderHook(() => useNotifications());
 
     await act(async () => {
-      getUserRejecter(new Error("auth boom"));
+      h.getUserRejecter(new Error("auth boom"));
       await flush();
       await flush();
     });
@@ -146,12 +146,12 @@ describe("useNotifications", () => {
     const { unmount } = renderHook(() => useNotifications());
 
     await act(async () => {
-      getUserResolver({ data: { user: { id: "user-1" } } });
+      h.getUserResolver({ data: { user: { id: "user-1" } } });
       await flush();
     });
 
     await act(async () => {
-      loadRejecter(new Error("load boom"));
+      h.loadRejecter(new Error("load boom"));
       await flush();
       await flush();
     });
@@ -164,12 +164,12 @@ describe("useNotifications", () => {
     const { result } = renderHook(() => useNotifications());
 
     await act(async () => {
-      getUserResolver({ data: { user: { id: "user-1" } } });
+      h.getUserResolver({ data: { user: { id: "user-1" } } });
       await flush();
     });
 
     await act(async () => {
-      loadResolver({
+      h.loadResolver({
         data: [
           {
             id: "n1",
