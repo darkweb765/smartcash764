@@ -1,20 +1,49 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const TARGET_BALANCE = 150000;
+const cacheKey = (uid: string) => `smartpay_balance_cache_${uid}`;
+
+const readCache = (uid: string): { balance: number; isClaimed: boolean } | null => {
+  try {
+    const raw = localStorage.getItem(cacheKey(uid));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return {
+      balance: Number(parsed.balance || 0),
+      isClaimed: Boolean(parsed.isClaimed),
+    };
+  } catch {
+    return null;
+  }
+};
+
+const writeCache = (uid: string, balance: number, isClaimed: boolean) => {
+  try {
+    localStorage.setItem(cacheKey(uid), JSON.stringify({ balance, isClaimed }));
+  } catch {}
+};
 
 export const useBalance = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [balance, setBalance] = useState<number>(0);
   const [isClaimed, setIsClaimed] = useState<boolean>(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const saveTimer = useRef<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (mounted) setUserId(user?.id ?? null);
+      if (!mounted) return;
+      const uid = user?.id ?? null;
+      setUserId(uid);
+      if (uid) {
+        const cached = readCache(uid);
+        if (cached) {
+          setBalance(cached.balance);
+          setIsClaimed(cached.isClaimed);
+        }
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -24,6 +53,12 @@ export const useBalance = () => {
         setBalance(0);
         setIsClaimed(false);
         setIsAnimating(false);
+      } else {
+        const cached = readCache(nextUserId);
+        if (cached) {
+          setBalance(cached.balance);
+          setIsClaimed(cached.isClaimed);
+        }
       }
     });
 
@@ -49,6 +84,7 @@ export const useBalance = () => {
 
       if (error) {
         console.error("Error loading app state:", error);
+        return;
       }
 
       if (!data) {
@@ -56,12 +92,16 @@ export const useBalance = () => {
         if (!cancelled) {
           setBalance(0);
           setIsClaimed(false);
+          writeCache(userId, 0, false);
         }
         return;
       }
 
-      setBalance(Number(data.balance || 0));
-      setIsClaimed(Boolean(data.gift_claimed));
+      const nextBalance = Number(data.balance || 0);
+      const nextClaimed = Boolean(data.gift_claimed);
+      setBalance(nextBalance);
+      setIsClaimed(nextClaimed);
+      writeCache(userId, nextBalance, nextClaimed);
     };
 
     loadState();
@@ -73,8 +113,7 @@ export const useBalance = () => {
 
   const persistState = useCallback(async (nextBalance: number, nextClaimed: boolean) => {
     if (!userId) return;
-    if (saveTimer.current) window.clearTimeout(saveTimer.current);
-    // Immediate write so reopening the app always shows the latest balance.
+    writeCache(userId, nextBalance, nextClaimed);
     const { error } = await supabase
       .from("user_app_state")
       .upsert({ user_id: userId, balance: nextBalance, gift_claimed: nextClaimed }, { onConflict: "user_id" });
@@ -83,7 +122,6 @@ export const useBalance = () => {
 
   const claimGift = useCallback((): Promise<boolean> => {
     return new Promise((resolve) => {
-      // Block re-claim while a balance is still on the dashboard.
       if (isClaimed || isAnimating || balance > 0) {
         resolve(false);
         return;
@@ -117,7 +155,6 @@ export const useBalance = () => {
   const deductBalance = useCallback((amount: number) => {
     setBalance((prev) => {
       const next = Math.max(0, prev - amount);
-      // Once the balance is fully withdrawn, allow the user to claim again.
       const nextClaimed = next === 0 ? false : isClaimed;
       if (next === 0) setIsClaimed(false);
       persistState(next, nextClaimed);
