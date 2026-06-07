@@ -1,61 +1,64 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-// ---- Mock supabase client ----
-const subscribeMock = vi.fn();
-const removeChannelMock = vi.fn();
-const onAuthStateChangeMock = vi.fn();
-
-let getUserResolver: (v: any) => void;
-let getUserRejecter: (e: any) => void;
-let loadResolver: (v: any) => void;
-let loadRejecter: (e: any) => void;
-
-const makeChannel = () => {
-  const channel: any = {
-    on: vi.fn(() => channel),
-    subscribe: vi.fn(() => {
-      subscribeMock();
-      return channel;
-    }),
+// ---- Mock supabase client (hoisted refs so vi.mock factory can use them) ----
+const h = vi.hoisted(() => {
+  const state: any = {
+    getUserResolver: null as any,
+    getUserRejecter: null as any,
+    loadResolver: null as any,
+    loadRejecter: null as any,
+    removeChannel: null as any,
   };
-  return channel;
-};
-
-const fromSelectChain = () => ({
-  select: vi.fn(() => ({
-    eq: vi.fn(() => ({
-      order: vi.fn(
-        () =>
-          new Promise((resolve, reject) => {
-            loadResolver = resolve;
-            loadRejecter = reject;
-          })
-      ),
-    })),
-  })),
+  return state;
 });
 
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    auth: {
-      getUser: vi.fn(
-        () =>
-          new Promise((resolve, reject) => {
-            getUserResolver = resolve;
-            getUserRejecter = reject;
-          })
-      ),
-      onAuthStateChange: (cb: any) => {
-        onAuthStateChangeMock(cb);
-        return { data: { subscription: { unsubscribe: vi.fn() } } };
+vi.mock("@/integrations/supabase/client", () => {
+  const removeChannel = vi.fn();
+  h.removeChannel = removeChannel;
+
+  const makeChannel = () => {
+    const channel: any = {
+      on: vi.fn(() => channel),
+      subscribe: vi.fn(() => channel),
+    };
+    return channel;
+  };
+
+  const fromSelectChain = () => ({
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        order: vi.fn(
+          () =>
+            new Promise((resolve, reject) => {
+              h.loadResolver = resolve;
+              h.loadRejecter = reject;
+            })
+        ),
+      })),
+    })),
+  });
+
+  return {
+    supabase: {
+      auth: {
+        getUser: vi.fn(
+          () =>
+            new Promise((resolve, reject) => {
+              h.getUserResolver = resolve;
+              h.getUserRejecter = reject;
+            })
+        ),
+        onAuthStateChange: () => ({
+          data: { subscription: { unsubscribe: vi.fn() } },
+        }),
       },
+      from: vi.fn(() => fromSelectChain()),
+      channel: vi.fn(() => makeChannel()),
+      removeChannel,
     },
-    from: vi.fn(() => fromSelectChain()),
-    channel: vi.fn(() => makeChannel()),
-    removeChannel: removeChannelMock,
-  },
-}));
+  };
+});
 
 import { useNotifications } from "./useNotifications";
 
