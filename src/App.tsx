@@ -38,6 +38,7 @@ import GiftCard from "./pages/GiftCard";
 import NotFound from "./pages/NotFound";
 import SupportReplyPopup from "./components/SupportReplyPopup";
 import PurchaseSuccessPopup from "./components/PurchaseSuccessPopup";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -104,40 +105,42 @@ const AppRoutes = () => {
   }
 
   return (
-    <AppProvider key={session?.user?.id ?? "guest"}>
-      <Routes>
-        <Route path="/" element={session ? <Navigate to="/dashboard" replace /> : <Welcome />} />
-        <Route path="/welcome" element={session ? <Navigate to="/dashboard" replace /> : <Welcome />} />
-        <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <Login />} />
-        <Route path="/register" element={session ? <Navigate to="/dashboard" replace /> : <Register />} />
-        <Route path="/dashboard" element={session ? <Index /> : <Navigate to="/welcome" replace />} />
-        <Route path="/profile" element={session ? <Profile /> : <Navigate to="/welcome" replace />} />
-        <Route path="/withdraw" element={session ? <Withdraw /> : <Navigate to="/welcome" replace />} />
-        <Route path="/notifications" element={session ? <Notifications /> : <Navigate to="/welcome" replace />} />
-        <Route path="/transactions" element={session ? <Transactions /> : <Navigate to="/welcome" replace />} />
-        <Route path="/promo" element={session ? <Promo /> : <Navigate to="/welcome" replace />} />
-        <Route path="/buy-promo" element={session ? <BuyPromo /> : <Navigate to="/welcome" replace />} />
-        <Route path="/help-support" element={session ? <HelpSupport /> : <Navigate to="/welcome" replace />} />
-        <Route path="/airtime" element={session ? <Airtime /> : <Navigate to="/welcome" replace />} />
-        <Route path="/data" element={session ? <Data /> : <Navigate to="/welcome" replace />} />
-        <Route path="/cable-tv" element={session ? <CableTv /> : <Navigate to="/welcome" replace />} />
-        <Route path="/electricity" element={session ? <Electricity /> : <Navigate to="/welcome" replace />} />
-        <Route path="/internet" element={session ? <Internet /> : <Navigate to="/welcome" replace />} />
-        <Route path="/join-group" element={session ? <JoinGroup /> : <Navigate to="/welcome" replace />} />
-        <Route path="/betting" element={session ? <Betting /> : <Navigate to="/welcome" replace />} />
-        <Route path="/wallet" element={session ? <Wallet /> : <Navigate to="/welcome" replace />} />
-        <Route path="/live-chat" element={session ? <LiveChat /> : <Navigate to="/welcome" replace />} />
-        <Route path="/report-issue" element={session ? <ReportIssue /> : <Navigate to="/welcome" replace />} />
-        <Route path="/about-smartpay" element={session ? <AboutSmartPay /> : <Navigate to="/welcome" replace />} />
-        <Route path="/security" element={session ? <Security /> : <Navigate to="/welcome" replace />} />
-        <Route path="/account-settings" element={session ? <AccountSettings /> : <Navigate to="/welcome" replace />} />
-        <Route path="/giftcard" element={session ? <GiftCard /> : <Navigate to="/welcome" replace />} />
-        <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/admin-panel" element={<AdminAuthGate><AdminPanel /></AdminAuthGate>} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider key={session?.user?.id ?? "guest"}>
+        <Routes>
+          <Route path="/" element={session ? <Navigate to="/dashboard" replace /> : <Welcome />} />
+          <Route path="/welcome" element={session ? <Navigate to="/dashboard" replace /> : <Welcome />} />
+          <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <Login />} />
+          <Route path="/register" element={session ? <Navigate to="/dashboard" replace /> : <Register />} />
+          <Route path="/dashboard" element={session ? <Index /> : <Navigate to="/welcome" replace />} />
+          <Route path="/profile" element={session ? <Profile /> : <Navigate to="/welcome" replace />} />
+          <Route path="/withdraw" element={session ? <Withdraw /> : <Navigate to="/welcome" replace />} />
+          <Route path="/notifications" element={session ? <Notifications /> : <Navigate to="/welcome" replace />} />
+          <Route path="/transactions" element={session ? <Transactions /> : <Navigate to="/welcome" replace />} />
+          <Route path="/promo" element={session ? <Promo /> : <Navigate to="/welcome" replace />} />
+          <Route path="/buy-promo" element={session ? <BuyPromo /> : <Navigate to="/welcome" replace />} />
+          <Route path="/help-support" element={session ? <HelpSupport /> : <Navigate to="/welcome" replace />} />
+          <Route path="/airtime" element={session ? <Airtime /> : <Navigate to="/welcome" replace />} />
+          <Route path="/data" element={session ? <Data /> : <Navigate to="/welcome" replace />} />
+          <Route path="/cable-tv" element={session ? <CableTv /> : <Navigate to="/welcome" replace />} />
+          <Route path="/electricity" element={session ? <Electricity /> : <Navigate to="/welcome" replace />} />
+          <Route path="/internet" element={session ? <Internet /> : <Navigate to="/welcome" replace />} />
+          <Route path="/join-group" element={session ? <JoinGroup /> : <Navigate to="/welcome" replace />} />
+          <Route path="/betting" element={session ? <Betting /> : <Navigate to="/welcome" replace />} />
+          <Route path="/wallet" element={session ? <Wallet /> : <Navigate to="/welcome" replace />} />
+          <Route path="/live-chat" element={session ? <LiveChat /> : <Navigate to="/welcome" replace />} />
+          <Route path="/report-issue" element={session ? <ReportIssue /> : <Navigate to="/welcome" replace />} />
+          <Route path="/about-smartpay" element={session ? <AboutSmartPay /> : <Navigate to="/welcome" replace />} />
+          <Route path="/security" element={session ? <Security /> : <Navigate to="/welcome" replace />} />
+          <Route path="/account-settings" element={session ? <AccountSettings /> : <Navigate to="/welcome" replace />} />
+          <Route path="/giftcard" element={session ? <GiftCard /> : <Navigate to="/welcome" replace />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/admin-panel" element={<AdminAuthGate><AdminPanel /></AdminAuthGate>} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AppProvider>
+    </ErrorBoundary>
   );
 };
 
