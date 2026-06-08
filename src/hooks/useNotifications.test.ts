@@ -2,16 +2,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 // ---- Mock supabase client (hoisted refs so vi.mock factory can use them) ----
-const h = vi.hoisted(() => {
-  const state: any = {
-    getUserResolver: null as any,
-    getUserRejecter: null as any,
-    loadResolver: null as any,
-    loadRejecter: null as any,
-    removeChannel: null as any,
-  };
-  return state;
-});
+const h: {
+  getUserResolver: any;
+  getUserRejecter: any;
+  loadResolver: any;
+  loadRejecter: any;
+  removeChannel: any;
+} = vi.hoisted(() => ({
+  getUserResolver: null,
+  getUserRejecter: null,
+  loadResolver: null,
+  loadRejecter: null,
+  removeChannel: null,
+}));
 
 vi.mock("@/integrations/supabase/client", () => {
   const removeChannel = vi.fn();
