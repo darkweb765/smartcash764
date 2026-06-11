@@ -1,25 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-// ---- Mock supabase client (hoisted refs so vi.mock factory can use them) ----
-const h: {
-  getUserResolver: any;
-  getUserRejecter: any;
-  loadResolver: any;
-  loadRejecter: any;
-  removeChannel: any;
-} = vi.hoisted(() => ({
-  getUserResolver: null,
-  getUserRejecter: null,
-  loadResolver: null,
-  loadRejecter: null,
-  removeChannel: null,
+// ---- Mutable hoisted resolvers (always functions, never null) ----
+const h = vi.hoisted(() => ({
+  getUserResolver: (_value: any) => {},
+  getUserRejecter: (_reason: any) => {},
+  loadResolver: (_value: any) => {},
+  loadRejecter: (_reason: any) => {},
+  removeChannel: vi.fn(),
 }));
 
 vi.mock("@/integrations/supabase/client", () => {
-  const removeChannel = vi.fn();
-  h.removeChannel = removeChannel;
-
   const makeChannel = () => {
     const channel: any = {
       on: vi.fn(() => channel),
@@ -58,14 +49,14 @@ vi.mock("@/integrations/supabase/client", () => {
       },
       from: vi.fn(() => fromSelectChain()),
       channel: vi.fn(() => makeChannel()),
-      removeChannel,
+      removeChannel: h.removeChannel,
     },
   };
 });
 
 import { useNotifications } from "./useNotifications";
 
-const flush = () => new Promise((r) => setTimeout(r, 0));
+const flush = () => new Promise<void>((r) => setTimeout(r, 0));
 
 describe("useNotifications", () => {
   let unhandled: any[] = [];
