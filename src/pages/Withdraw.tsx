@@ -258,6 +258,7 @@ const Withdraw = () => {
       setWithdrawnAmount(amount);
       deductBalance(amountNum);
       addNotification("withdrawal_success", "Withdrawal completed successfully", amountNum);
+      try { localStorage.setItem("smartpay_bonus_withdrawn", "true"); } catch {}
       setWithdrawStatus("success");
       return;
     }
