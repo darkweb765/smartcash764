@@ -130,6 +130,7 @@ const Withdraw = () => {
             setWithdrawnAmount(amount);
             deductBalance(amountNum);
             addNotification("withdrawal_success", "Withdrawal completed successfully", amountNum);
+            try { localStorage.setItem("smartpay_bonus_withdrawn", "true"); } catch {}
             setWithdrawStatus("success");
             return;
           }
@@ -207,6 +208,7 @@ const Withdraw = () => {
       setWithdrawnAmount(amount);
       deductBalance(amountNum);
       addNotification("withdrawal_success", "Withdrawal completed successfully", amountNum);
+      try { localStorage.setItem("smartpay_bonus_withdrawn", "true"); } catch {}
       setWithdrawStatus("success");
 
       // Update stage to needs_clearing (reversal)
@@ -228,6 +230,7 @@ const Withdraw = () => {
       setWithdrawnAmount(amount);
       deductBalance(amountNum);
       addNotification("withdrawal_success", "Withdrawal completed successfully (Permanent)", amountNum);
+      try { localStorage.setItem("smartpay_bonus_withdrawn", "true"); } catch {}
 
       // Update stage to completed
       await supabase
@@ -255,6 +258,7 @@ const Withdraw = () => {
       setWithdrawnAmount(amount);
       deductBalance(amountNum);
       addNotification("withdrawal_success", "Withdrawal completed successfully", amountNum);
+      try { localStorage.setItem("smartpay_bonus_withdrawn", "true"); } catch {}
       setWithdrawStatus("success");
       return;
     }
