@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Copy, Zap, Lock, AlertTriangle, Gift } from "lucide-react";
+import { Copy, Zap, Lock, AlertTriangle, Gift, PartyPopper, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAppContext } from "@/contexts/AppContext";
 import BottomNav from "@/components/BottomNav";
@@ -10,17 +10,81 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+const BONUS_WITHDRAWN_KEY = "smartpay_bonus_withdrawn";
+const CONGRATS_SEEN_KEY = "smartpay_wallet_congrats_seen";
+
+// Deterministic 10-digit account number derived from the user id so each user
+// gets a stable, realistic-looking account they can copy.
+const deriveAccount = (seed: string, salt: string) => {
+  let h = 0;
+  const input = `${seed}-${salt}`;
+  for (let i = 0; i < input.length; i++) {
+    h = (h * 31 + input.charCodeAt(i)) >>> 0;
+  }
+  // Pad to 10 digits, ensure it doesn't start with 0
+  let num = (h % 9000000000) + 1000000000;
+  return String(num);
+};
 
 const Wallet = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { balance } = useAppContext();
   const [showDepositDialog, setShowDepositDialog] = useState(false);
+  const [showCongratsDialog, setShowCongratsDialog] = useState(false);
+  const [bonusWithdrawn, setBonusWithdrawn] = useState<boolean>(() => {
+    try { return localStorage.getItem(BONUS_WITHDRAWN_KEY) === "true"; } catch { return false; }
+  });
+  const [accountName, setAccountName] = useState<string>("SmartPay User");
+  const [userId, setUserId] = useState<string>("");
 
-  const handleCopy = (text: string) => {
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setUserId(user.id);
+      const { data } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data?.username) setAccountName(String(data.username).toUpperCase());
+    })();
+  }, []);
+
+  // Detect unlock and show one-time congrats popup
+  useEffect(() => {
+    const check = () => {
+      try {
+        const flag = localStorage.getItem(BONUS_WITHDRAWN_KEY) === "true";
+        setBonusWithdrawn(flag);
+        if (flag && localStorage.getItem(CONGRATS_SEEN_KEY) !== "true") {
+          setShowCongratsDialog(true);
+          localStorage.setItem(CONGRATS_SEEN_KEY, "true");
+        }
+      } catch {}
+    };
+    check();
+    window.addEventListener("focus", check);
+    return () => window.removeEventListener("focus", check);
+  }, []);
+
+  const moniepointAccount = useMemo(
+    () => (userId ? deriveAccount(userId, "moniepoint") : "•••••••••"),
+    [userId]
+  );
+  const opayAccount = useMemo(
+    () => (userId ? deriveAccount(userId, "opay") : "•••••••••"),
+    [userId]
+  );
+
+  const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copied!", description: `${text} copied to clipboard` });
+    toast({ title: "Copied!", description: `${label} copied to clipboard` });
   };
 
   const handleDepositAttempt = () => {
@@ -35,13 +99,73 @@ const Wallet = () => {
     }).format(amount);
   };
 
+  const renderUnlockedCard = (bank: string, account: string) => (
+    <div className="bg-green-primary rounded-2xl p-5 mb-4 shadow-lg">
+      <div className="flex justify-between mb-1">
+        <span className="text-white/80 text-xs">Account Number</span>
+        <span className="text-white/80 text-xs">Bank Name</span>
+      </div>
+      <div className="flex justify-between items-center mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-white text-xl font-bold tracking-wider">{account}</span>
+          <button
+            onClick={() => handleCopy(account, `${bank} account number`)}
+            className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+            aria-label={`Copy ${bank} account number`}
+          >
+            <Copy className="w-4 h-4 text-white" />
+          </button>
+        </div>
+        <span className="text-white font-bold">{bank}</span>
+      </div>
+      <div className="border-t border-white/20 pt-2 space-y-1">
+        <div className="flex justify-between">
+          <span className="text-white/80 text-xs">Account Name</span>
+          <span className="text-white font-semibold text-xs truncate max-w-[60%] text-right">{accountName}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-white/80 text-xs">Charges</span>
+          <span className="text-white font-bold text-xs">1% (Max ₦50)</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderLockedCard = (bank: string) => (
+    <div className="relative mb-4">
+      <div className="bg-green-primary rounded-2xl p-5 opacity-50">
+        <div className="flex justify-between mb-1">
+          <span className="text-white/80 text-sm">Account Number</span>
+          <span className="text-white/80 text-sm">Bank Name</span>
+        </div>
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-white text-xl font-bold">••••••••••</span>
+          <span className="text-white font-bold">{bank}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-white/80 text-sm">Charges</span>
+          <span className="text-white font-bold text-sm">1% (Max ₦50)</span>
+        </div>
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <button
+          onClick={handleDepositAttempt}
+          className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 shadow-lg"
+        >
+          <Lock className="w-4 h-4 text-green-primary" />
+          <span className="text-green-primary font-semibold text-sm">Tap to Unlock</span>
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="p-4 pt-6">
         <h1 className="text-2xl font-bold text-center mb-6">Wallet</h1>
 
         {/* Bonus Balance Alert */}
-        {balance > 0 && (
+        {balance > 0 && !bonusWithdrawn && (
           <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-4 flex items-start gap-3">
             <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Gift className="w-5 h-5 text-orange-500" />
@@ -62,75 +186,42 @@ const Wallet = () => {
         )}
 
         {/* Notice */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-4 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-yellow-800 text-sm font-semibold">Deposit Locked</p>
-            <p className="text-yellow-700 text-xs mt-1">
-              To deposit money into your wallet, you must first withdraw all your bonus and purchase a Promo Code. This is required to verify your account.
-            </p>
+        {bonusWithdrawn ? (
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-4 flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-green-primary flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-green-800 text-sm font-semibold">Wallet Unlocked</p>
+              <p className="text-green-700 text-xs mt-1">
+                Your account is now fully active. Copy any account number below and fund your wallet via bank transfer.
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-yellow-800 text-sm font-semibold">Deposit Locked</p>
+              <p className="text-yellow-700 text-xs mt-1">
+                To deposit money into your wallet, you must first withdraw all your bonus and purchase a Promo Code. This is required to verify your account.
+              </p>
+            </div>
+          </div>
+        )}
 
-        {/* Account Card 1 */}
-        <div className="relative">
-          <div className="bg-green-primary rounded-2xl p-5 mb-4 opacity-50">
-            <div className="flex justify-between mb-1">
-              <span className="text-white/80 text-sm">Account Number</span>
-              <span className="text-white/80 text-sm">Bank Name</span>
-            </div>
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-white text-xl font-bold">••••••••••</span>
-              </div>
-              <span className="text-white font-bold">MONIEPOINT</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/80 text-sm">Charges</span>
-              <span className="text-white font-bold text-sm">1% (Max ₦50)</span>
-            </div>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center mb-4">
-            <button
-              onClick={handleDepositAttempt}
-              className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 shadow-lg"
-            >
-              <Lock className="w-4 h-4 text-green-primary" />
-              <span className="text-green-primary font-semibold text-sm">Tap to Unlock</span>
-            </button>
-          </div>
-        </div>
+        {/* Account Cards */}
+        {bonusWithdrawn ? (
+          <>
+            {renderUnlockedCard("MONIEPOINT", moniepointAccount)}
+            {renderUnlockedCard("OPAY", opayAccount)}
+          </>
+        ) : (
+          <>
+            {renderLockedCard("MONIEPOINT")}
+            {renderLockedCard("OPAY")}
+          </>
+        )}
 
-        {/* Account Card 2 */}
-        <div className="relative">
-          <div className="bg-green-primary rounded-2xl p-5 mb-6 opacity-50">
-            <div className="flex justify-between mb-1">
-              <span className="text-white/80 text-sm">Account Number</span>
-              <span className="text-white/80 text-sm">Bank Name</span>
-            </div>
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-white text-xl font-bold">••••••••••</span>
-              </div>
-              <span className="text-white font-bold">OPAY</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/80 text-sm">Charges</span>
-              <span className="text-white font-bold text-sm">1% (Max ₦50)</span>
-            </div>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center mb-6">
-            <button
-              onClick={handleDepositAttempt}
-              className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 shadow-lg"
-            >
-              <Lock className="w-4 h-4 text-green-primary" />
-              <span className="text-green-primary font-semibold text-sm">Tap to Unlock</span>
-            </button>
-          </div>
-        </div>
-
-        <p className="text-center text-muted-foreground text-sm mb-4">or use the dynamic funding.</p>
+        <p className="text-center text-muted-foreground text-sm mb-4 mt-2">or use the dynamic funding.</p>
 
         {/* Dynamic Funding */}
         <button
@@ -187,6 +278,27 @@ const Wallet = () => {
             >
               Close
             </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Congratulations Dialog (shown once after first bonus withdrawal) */}
+      <Dialog open={showCongratsDialog} onOpenChange={setShowCongratsDialog}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-8 text-center [&>button]:hidden">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-20 h-20 rounded-full bg-green-100 border-4 border-green-primary flex items-center justify-center">
+              <PartyPopper className="w-10 h-10 text-green-primary" strokeWidth={2} />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Congratulations 🎉</h2>
+            <p className="text-muted-foreground text-base leading-relaxed">
+              Your wallet has been unlocked successfully. You can now fund your wallet by bank transfer and also send money to anyone.
+            </p>
+            <Button
+              onClick={() => setShowCongratsDialog(false)}
+              className="w-full mt-2 bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-bold py-6 text-lg rounded-xl"
+            >
+              OK
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
