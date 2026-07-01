@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { MessageCircle, Send, Loader2 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { MessageCircle, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SupportMsg {
@@ -11,11 +11,9 @@ interface SupportMsg {
 
 const SupportReplyPopup = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [pending, setPending] = useState<SupportMsg | null>(null);
-  const [reply, setReply] = useState("");
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Get current user
   useEffect(() => {
@@ -71,25 +69,9 @@ const SupportReplyPopup = () => {
   // Don't show on chat page itself
   if (!pending || !userId || location.pathname === "/live-chat") return null;
 
-  const handleSend = async () => {
-    if (!reply.trim() || !userId) return;
-    setSending(true);
-    setError(null);
-    try {
-      const { error: insertError } = await supabase.from("chat_messages").insert({
-        user_id: userId,
-        message: reply.trim(),
-        image_url: null,
-        sender_type: "user",
-      });
-      if (insertError) throw insertError;
-      setReply("");
-      setPending(null);
-    } catch (err: any) {
-      setError(err?.message || "Failed to send. Try again.");
-    } finally {
-      setSending(false);
-    }
+  const handleReply = () => {
+    setPending(null);
+    navigate("/live-chat");
   };
 
   return (
@@ -105,37 +87,15 @@ const SupportReplyPopup = () => {
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground mt-4 mb-2">
-          Please reply to continue using the app.
+        <p className="text-xs text-muted-foreground mt-4 mb-3">
+          Please reply in live chat to continue using the app.
         </p>
 
-        <textarea
-          value={reply}
-          onChange={(e) => setReply(e.target.value)}
-          placeholder="Type your reply..."
-          rows={3}
-          autoFocus
-          className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-primary/50 resize-none"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-        />
-
-        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-
         <button
-          onClick={handleSend}
-          disabled={!reply.trim() || sending}
-          className="mt-3 w-full bg-green-primary text-white text-sm font-semibold rounded-full py-3 active:opacity-80 transition disabled:opacity-50 flex items-center justify-center gap-2"
+          onClick={handleReply}
+          className="w-full bg-green-primary text-white text-sm font-semibold rounded-full py-3 active:opacity-80 transition flex items-center justify-center gap-2"
         >
-          {sending ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
-          ) : (
-            <><Send className="w-4 h-4" /> Send Reply</>
-          )}
+          Reply in Live Chat <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </div>
