@@ -210,10 +210,10 @@ const AdminPanel = () => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "admin_realtime_events" }, (payload: any) => {
         const tableName = payload.new?.table_name;
         if (tableName === "promo_codes" || tableName === "withdrawal_requests") refreshAlertCount();
-        if (tableName === "promo_purchases" && tab === "users") fetchData();
+        if ((tableName === "promo_purchases" || tableName === "profiles") && tab === "users") fetchData();
         if ((tableName === "promo_codes" || tableName === "withdrawal_requests") && tab === "alerts") fetchData();
         if (tableName === "support_tickets" && tab === "reports") fetchData();
-        if (tableName === "chat_messages" && tab === "livechat" && !activeChatUserId) fetchData();
+        if ((tableName === "chat_messages" || tableName === "profiles") && tab === "livechat" && !activeChatUserId) fetchData();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
