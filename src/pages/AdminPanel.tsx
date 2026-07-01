@@ -36,7 +36,9 @@ interface Conversation {
   username: string;
   email: string;
   last_message: string;
-  last_message_time: string;
+  last_message_time: string | null;
+  has_message?: boolean;
+  registered_at?: string;
 }
 
 interface ChatMessage {
