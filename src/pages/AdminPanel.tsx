@@ -632,17 +632,21 @@ const AdminPanel = () => {
             {tab === "users" && (
               filteredPurchases.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No users yet</div>
-              ) : filteredPurchases.map((p) => (
+              ) : filteredPurchases.map((p) => {
+                const displayName = p.full_name || p.username || "User";
+                const shortU = (p.username || "usr").substring(0, 3);
+                const isRegisteredOnly = p.status === "registered";
+                return (
                 <div key={p.id} className="bg-white rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start gap-3">
                     <div className="w-11 h-11 rounded-full bg-[#c8d6cc] flex items-center justify-center text-[#2d4a3e] font-bold text-lg flex-shrink-0">
-                      {p.full_name.charAt(0).toUpperCase()}
+                      {displayName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div className="min-w-0">
-                          <p className="font-bold text-foreground text-[15px]">{p.full_name}</p>
-                          <p className="text-sm text-muted-foreground truncate">{p.email}</p>
+                          <p className="font-bold text-foreground text-[15px]">{displayName}</p>
+                          <p className="text-sm text-muted-foreground truncate">{p.email || "—"}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{formatDate(p.created_at)}</p>
                           {p.receipt_image && (
                             <button
@@ -655,7 +659,9 @@ const AdminPanel = () => {
                           )}
                         </div>
                         <div className="text-right flex-shrink-0 ml-2">
-                          {p.status === "verified" ? (
+                          {isRegisteredOnly ? (
+                            <p className="text-xs text-muted-foreground font-medium">Registered</p>
+                          ) : p.status === "verified" ? (
                             <div>
                               <p className="text-xs text-green-600 font-semibold flex items-center gap-1 justify-end">
                                 <CheckCircle className="w-3.5 h-3.5" /> Verified
@@ -663,7 +669,7 @@ const AdminPanel = () => {
                               <p className="text-xs text-green-600 flex items-center gap-1 justify-end mt-0.5">
                                 ✅ Email Sent
                               </p>
-                              <p className="text-xs text-muted-foreground mt-0.5">user: {p.username.substring(0, 3)}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">user: {shortU}</p>
                             </div>
                           ) : (
                             <>
@@ -671,13 +677,13 @@ const AdminPanel = () => {
                                 size="sm"
                                 onClick={() => setConfirmDialog({
                                   open: true, type: "verify", id: p.id,
-                                  label: `Verify payment for ${p.full_name}?`,
+                                  label: `Verify payment for ${displayName}?`,
                                 })}
                                 className="bg-green-primary hover:bg-green-primary/90 text-white rounded-lg px-5 py-1.5 text-xs font-semibold"
                               >
                                 Verify
                               </Button>
-                              <p className="text-xs text-muted-foreground mt-1">user: {p.username.substring(0, 3)}</p>
+                              <p className="text-xs text-muted-foreground mt-1">user: {shortU}</p>
                             </>
                           )}
                         </div>
@@ -691,12 +697,13 @@ const AdminPanel = () => {
                         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                       >
                         <Copy className="w-3 h-3" />
-                        {copiedId === p.id ? "Copied!" : `${p.username.substring(0, 3)} copied acct no.`}
+                        {copiedId === p.id ? "Copied!" : `${shortU} copied acct no.`}
                       </button>
                     </div>
                   )}
                 </div>
-              ))
+                );
+              })
             )}
 
             {/* ALERTS TAB */}
