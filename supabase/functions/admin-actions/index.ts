@@ -465,38 +465,82 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "GET" && action === "chat_conversations") {
-      const { data, error } = await supabase
+      // Show every registered user, even without messages.
+      // Users with messages sort to the top by newest message.
+      // Users without messages sort to the bottom by registration time
+      // (oldest first, newest at the bottom).
+      const { data: msgs } = await supabase
         .from("chat_messages").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
+      const { data: profiles } = await supabase
+        .from("profiles").select("user_id, username, created_at");
 
-      const userMap: Record<string, any> = {};
-      for (const msg of (data || [])) {
-        if (!userMap[msg.user_id]) userMap[msg.user_id] = msg;
+      const latestByUser: Record<string, any> = {};
+      for (const m of (msgs || [])) {
+        if (!latestByUser[m.user_id]) latestByUser[m.user_id] = m;
       }
-      const userIds = Object.keys(userMap);
-      let profiles: any[] = [];
-      if (userIds.length > 0) {
-        const { data: pData } = await supabase
-          .from("profiles").select("*").in("user_id", userIds);
-        profiles = pData || [];
+
+      // Emails from auth
+      const emailById: Record<string, string> = {};
+      try {
+        let page = 1;
+        while (true) {
+          const { data: usersPage } = await (supabase as any).auth.admin.listUsers({ page, perPage: 200 });
+          const list = usersPage?.users || [];
+          for (const u of list) { if (u.email) emailById[u.id] = u.email; }
+          if (list.length < 200) break;
+          page++;
+          if (page > 25) break;
+        }
+      } catch (_) {}
+
+      const seen = new Set<string>();
+      const conversations: any[] = [];
+      for (const prof of (profiles || [])) {
+        seen.add(prof.user_id);
+        const last = latestByUser[prof.user_id];
+        conversations.push({
+          user_id: prof.user_id,
+          username: prof.username || "User",
+          email: emailById[prof.user_id] || "",
+          last_message: last?.message || "",
+          last_message_time: last?.created_at || null,
+          sender_type: last?.sender_type || null,
+          registered_at: prof.created_at,
+          has_message: !!last,
+        });
       }
-      const conversations = userIds.map((uid) => {
-        const profile = profiles.find((p: any) => p.user_id === uid);
-        const lastMsg = userMap[uid];
-        return {
+      // Any message-user without a profile row
+      for (const uid of Object.keys(latestByUser)) {
+        if (seen.has(uid)) continue;
+        const last = latestByUser[uid];
+        conversations.push({
           user_id: uid,
-          username: profile?.username || "User",
-          email: "",
-          last_message: lastMsg.message,
-          last_message_time: lastMsg.created_at,
-          sender_type: lastMsg.sender_type,
-        };
+          username: "User",
+          email: emailById[uid] || "",
+          last_message: last.message,
+          last_message_time: last.created_at,
+          sender_type: last.sender_type,
+          registered_at: last.created_at,
+          has_message: true,
+        });
+      }
+
+      conversations.sort((a, b) => {
+        if (a.has_message !== b.has_message) return a.has_message ? -1 : 1;
+        if (a.has_message) {
+          return new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime();
+        }
+        return new Date(a.registered_at).getTime() - new Date(b.registered_at).getTime();
       });
+
+      // Backfill any missing email from promo_purchases
       for (const conv of conversations) {
+        if (conv.email) continue;
         const { data: pp } = await supabase
           .from("promo_purchases").select("email").eq("user_id", conv.user_id).limit(1);
         if (pp && pp.length > 0) conv.email = pp[0].email;
       }
+
       return json(conversations);
     }
 
