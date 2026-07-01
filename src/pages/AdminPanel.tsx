@@ -809,12 +809,14 @@ const AdminPanel = () => {
                           <p className="font-bold text-foreground text-[15px]">{conv.username}</p>
                           <p className="text-xs text-muted-foreground truncate">{conv.email || ""}</p>
                           <div className="flex items-center gap-1.5 mt-1">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            <p className="text-sm text-muted-foreground truncate">{conv.last_message}</p>
+                            <span className={`w-2 h-2 rounded-full ${conv.last_message ? "bg-green-500" : "bg-muted-foreground/40"}`}></span>
+                            <p className="text-sm text-muted-foreground truncate italic">
+                              {conv.last_message || "No messages yet"}
+                            </p>
                           </div>
                         </div>
                         <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
-                          {formatTime(conv.last_message_time)}
+                          {conv.last_message_time ? formatTime(conv.last_message_time) : "New"}
                         </span>
                       </div>
                     </div>
