@@ -349,10 +349,83 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "GET" && action === "all_purchases") {
-      const { data, error } = await supabase
+      // Merge every registered user with any promo purchase they've made.
+      // Newest registrations sit at the bottom; users with a PENDING purchase
+      // float to the top so admin can verify their payment quickly.
+      const { data: purchases } = await supabase
         .from("promo_purchases").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return json(data);
+      const { data: profiles } = await supabase
+        .from("profiles").select("user_id, username, created_at");
+
+      // Fetch auth users (for email + created_at fallback)
+      const emailById: Record<string, string> = {};
+      const userCreatedById: Record<string, string> = {};
+      try {
+        let page = 1;
+        while (true) {
+          const { data: usersPage } = await (supabase as any).auth.admin.listUsers({ page, perPage: 200 });
+          const list = usersPage?.users || [];
+          for (const u of list) {
+            if (u.email) emailById[u.id] = u.email;
+            if (u.created_at) userCreatedById[u.id] = u.created_at;
+          }
+          if (list.length < 200) break;
+          page++;
+          if (page > 25) break;
+        }
+      } catch (_) { /* ignore, best effort */ }
+
+      // Latest purchase per user
+      const latestPurchase: Record<string, any> = {};
+      for (const p of (purchases || [])) {
+        if (!latestPurchase[p.user_id]) latestPurchase[p.user_id] = p;
+      }
+
+      const seen = new Set<string>();
+      const rows: any[] = [];
+      for (const prof of (profiles || [])) {
+        seen.add(prof.user_id);
+        const pur = latestPurchase[prof.user_id];
+        rows.push({
+          id: pur?.id || prof.user_id,
+          user_id: prof.user_id,
+          full_name: pur?.full_name || prof.username || "User",
+          email: pur?.email || emailById[prof.user_id] || "",
+          username: pur?.username || prof.username || "User",
+          status: pur?.status || "registered",
+          created_at: pur?.created_at || prof.created_at,
+          registered_at: prof.created_at || userCreatedById[prof.user_id],
+          receipt_image: pur?.receipt_image || null,
+        });
+      }
+      // Any purchase whose profile went missing — still include it
+      for (const p of (purchases || [])) {
+        if (seen.has(p.user_id)) continue;
+        seen.add(p.user_id);
+        rows.push({
+          id: p.id, user_id: p.user_id,
+          full_name: p.full_name, email: p.email, username: p.username,
+          status: p.status, created_at: p.created_at,
+          registered_at: userCreatedById[p.user_id] || p.created_at,
+          receipt_image: p.receipt_image || null,
+        });
+      }
+
+      rows.sort((a, b) => {
+        const aPending = a.status === "pending" ? 1 : 0;
+        const bPending = b.status === "pending" ? 1 : 0;
+        if (aPending !== bPending) return bPending - aPending; // pending on top
+        if (aPending) {
+          // Both pending: most recent purchase first
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+        // Non-pending: oldest registrations first, newest at bottom
+        const at = new Date(a.registered_at || a.created_at).getTime();
+        const bt = new Date(b.registered_at || b.created_at).getTime();
+        return at - bt;
+      });
+
+      return json(rows);
     }
 
     if (req.method === "GET" && action === "pending_activations") {
