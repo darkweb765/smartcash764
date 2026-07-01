@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { MessageCircle, X } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { MessageCircle, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SupportMsg {
@@ -10,10 +10,12 @@ interface SupportMsg {
 }
 
 const SupportReplyPopup = () => {
-  const navigate = useNavigate();
   const location = useLocation();
   const [userId, setUserId] = useState<string | null>(null);
   const [pending, setPending] = useState<SupportMsg | null>(null);
+  const [reply, setReply] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Get current user
   useEffect(() => {
@@ -27,7 +29,6 @@ const SupportReplyPopup = () => {
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
 
-  // Check pending unreplied support message
   const refresh = async (uid: string) => {
     const { data } = await supabase
       .from("chat_messages")
@@ -68,25 +69,73 @@ const SupportReplyPopup = () => {
   }, [userId]);
 
   // Don't show on chat page itself
-  if (!pending || location.pathname === "/live-chat") return null;
+  if (!pending || !userId || location.pathname === "/live-chat") return null;
+
+  const handleSend = async () => {
+    if (!reply.trim() || !userId) return;
+    setSending(true);
+    setError(null);
+    try {
+      const { error: insertError } = await supabase.from("chat_messages").insert({
+        user_id: userId,
+        message: reply.trim(),
+        image_url: null,
+        sender_type: "user",
+      });
+      if (insertError) throw insertError;
+      setReply("");
+      setPending(null);
+    } catch (err: any) {
+      setError(err?.message || "Failed to send. Try again.");
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
-    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-md animate-in slide-in-from-bottom duration-300">
-      <div className="bg-card border border-green-primary/40 rounded-2xl shadow-2xl p-4">
+    <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-md bg-card border border-green-primary/40 rounded-2xl shadow-2xl p-5 animate-in zoom-in-95 duration-200">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-green-primary/15 flex items-center justify-center shrink-0">
+          <div className="w-11 h-11 rounded-full bg-green-primary/15 flex items-center justify-center shrink-0">
             <MessageCircle className="w-5 h-5 text-green-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-green-primary mb-0.5">Smart Pay Support</p>
-            <p className="text-sm text-foreground line-clamp-2 break-words">{pending.message}</p>
+            <p className="text-xs font-semibold text-green-primary mb-1">Smart Pay Support</p>
+            <p className="text-sm text-foreground whitespace-pre-wrap break-words">{pending.message}</p>
           </div>
         </div>
+
+        <p className="text-xs text-muted-foreground mt-4 mb-2">
+          Please reply to continue using the app.
+        </p>
+
+        <textarea
+          value={reply}
+          onChange={(e) => setReply(e.target.value)}
+          placeholder="Type your reply..."
+          rows={3}
+          autoFocus
+          className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-primary/50 resize-none"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+        />
+
+        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+
         <button
-          onClick={() => navigate("/live-chat")}
-          className="mt-3 w-full bg-green-primary text-white text-sm font-semibold rounded-full py-2.5 active:opacity-80 transition"
+          onClick={handleSend}
+          disabled={!reply.trim() || sending}
+          className="mt-3 w-full bg-green-primary text-white text-sm font-semibold rounded-full py-3 active:opacity-80 transition disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          Reply to this message
+          {sending ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
+          ) : (
+            <><Send className="w-4 h-4" /> Send Reply</>
+          )}
         </button>
       </div>
     </div>
