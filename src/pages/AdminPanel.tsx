@@ -215,7 +215,7 @@ const AdminPanel = () => {
         if ((tableName === "promo_purchases" || tableName === "profiles") && tab === "users") fetchData();
         if ((tableName === "promo_codes" || tableName === "withdrawal_requests") && tab === "alerts") fetchData();
         if (tableName === "support_tickets" && tab === "reports") fetchData();
-        if ((tableName === "chat_messages" || tableName === "profiles") && tab === "livechat" && !activeChatUserId) fetchData();
+        if ((tableName === "chat_messages" || tableName === "profiles") && tab === "livechat") fetchData();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
