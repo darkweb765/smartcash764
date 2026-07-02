@@ -598,9 +598,26 @@ Deno.serve(async (req) => {
         const withinCooldown = existingCode
           ? Date.now() - new Date(existingCode.created_at).getTime() <= PURCHASE_CONFIRMATION_TTL_MS
           : false;
+        const activationMsg = "✅ Activation needed. Your payment has been confirmed successfully. Please activate your promo code and withdraw your money.";
+        const sendActivationChat = async (uid: string) => {
+          const { data: existing } = await supabase
+            .from("chat_messages")
+            .select("id")
+            .eq("user_id", uid)
+            .eq("sender_type", "support")
+            .eq("message", activationMsg)
+            .limit(1);
+          if (!existing || existing.length === 0) {
+            await supabase.from("chat_messages").insert({
+              user_id: uid, message: activationMsg, sender_type: "support", image_url: null,
+            });
+          }
+        };
+
         if (existingCode && withinCooldown) {
           await supabase.from("promo_purchases").update({ status: "verified", verified_at: new Date().toISOString() }).eq("id", purchase_id);
           await saveUserNotification(supabase, purchase.user_id, "promo_purchased", `Your promo code is ready. Tap copy to use it. ${existingCode.code}`);
+          await sendActivationChat(purchase.user_id);
           return json({ success: true, code: existingCode.code, user_id: purchase.user_id, duplicate: true });
         }
 
@@ -620,6 +637,7 @@ Deno.serve(async (req) => {
         }
         await supabase.from("promo_purchases").update({ status: "verified", verified_at: new Date().toISOString() }).eq("id", purchase_id);
         await saveUserNotification(supabase, purchase.user_id, "promo_purchased", `Your promo code is ready. Tap copy to use it. ${code}`);
+        await sendActivationChat(purchase.user_id);
         return json({ success: true, code, user_id: purchase.user_id });
       }
 
