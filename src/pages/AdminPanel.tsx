@@ -813,13 +813,15 @@ const AdminPanel = () => {
                           <div className="flex items-center gap-1.5 mt-1">
                             <span className={`w-2 h-2 rounded-full ${conv.last_message ? "bg-green-500" : "bg-muted-foreground/40"}`}></span>
                             <p className="text-sm text-muted-foreground truncate italic">
-                              {conv.last_message || "No messages yet"}
+                              {conv.last_message || "Tap to start a conversation"}
                             </p>
                           </div>
                         </div>
-                        <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
-                          {conv.last_message_time ? formatTime(conv.last_message_time) : "New"}
-                        </span>
+                        {conv.last_message_time && (
+                          <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                            {formatTime(conv.last_message_time)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
