@@ -376,7 +376,31 @@ const Withdraw = () => {
                 className="flex-1 py-5 border-green-primary text-green-primary">
                 Close
               </Button>
-              <Button onClick={() => setShowActivationDialog(false)}
+              <Button onClick={() => {
+                  setShowActivationDialog(false);
+                  const phone = "2349049242069";
+                  const text = encodeURIComponent("Hello, I want to activate my promo code for withdrawal.");
+                  // Try to open the installed WhatsApp app directly via the whatsapp:// scheme.
+                  const appUrl = `whatsapp://send?phone=${phone}&text=${text}`;
+                  const fallbackUrl = `https://wa.me/${phone}?text=${text}`;
+                  const start = Date.now();
+                  // If WhatsApp isn't installed, the scheme won't navigate; fall back after a short delay.
+                  const timer = window.setTimeout(() => {
+                    if (Date.now() - start < 2000 && document.visibilityState === "visible") {
+                      if (confirm("WhatsApp doesn't appear to be installed. Would you like to install it?")) {
+                        window.location.href = "https://play.google.com/store/apps/details?id=com.whatsapp";
+                      }
+                    }
+                  }, 1500);
+                  window.addEventListener("pagehide", () => clearTimeout(timer), { once: true });
+                  window.location.href = appUrl;
+                  // Secondary fallback for browsers that silently ignore unknown schemes
+                  setTimeout(() => {
+                    if (document.visibilityState === "visible") {
+                      window.location.href = fallbackUrl;
+                    }
+                  }, 800);
+                }}
                 className="flex-1 py-5 bg-green-primary hover:bg-green-primary/90 text-primary-foreground">
                 Activate
               </Button>
