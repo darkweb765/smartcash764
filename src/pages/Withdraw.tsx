@@ -379,10 +379,9 @@ const Withdraw = () => {
               <Button onClick={() => {
                   setShowActivationDialog(false);
                   const phone = "2349049242069";
-                  const text = encodeURIComponent("Hello, I want to activate my promo code for withdrawal.");
-                  // Try to open the installed WhatsApp app directly via the whatsapp:// scheme.
-                  const appUrl = `whatsapp://send?phone=${phone}&text=${text}`;
-                  const fallbackUrl = `https://wa.me/${phone}?text=${text}`;
+                  // Open WhatsApp chat directly with no pre-filled message.
+                  const appUrl = `whatsapp://send?phone=${phone}`;
+                  const fallbackUrl = `https://wa.me/${phone}`;
                   const start = Date.now();
                   // If WhatsApp isn't installed, the scheme won't navigate; fall back after a short delay.
                   const timer = window.setTimeout(() => {
