@@ -4,9 +4,8 @@ const source = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
 
 Deno.test("payment verification path does not insert any support chat message", () => {
   // Isolate the verify_purchase handler region
-  const start = source.indexOf("verify_purchase");
-  assert(start > -1, "verify_purchase handler must exist");
-  // Take a generous window covering the whole handler
+  const start = source.indexOf("verify_payment");
+  assert(start > -1, "verify_payment handler must exist");
   const region = source.slice(start, start + 4000);
 
   // The activation auto-chat helper must be a no-op stub
