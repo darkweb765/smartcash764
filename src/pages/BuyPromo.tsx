@@ -114,12 +114,19 @@ const BuyPromo = () => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      // Prefill full name & email from the registered user
+      if (user.email) setEmail((prev) => prev || user.email!);
+      const { data: profile } = await supabase
+        .from("profiles").select("username").eq("user_id", user.id).maybeSingle();
+      if (profile?.username) setFullName((prev) => prev || profile.username);
+
       const latest = await fetchLatestConfirmedCode(user.id);
       if (latest && Date.now() - latest.at <= CONFIRMED_COOLDOWN_MS) {
         showConfirmed(latest.code, latest.at);
       }
     })();
   }, []);
+
 
   // Fetch payment details when entering account screen
   const fetchDetails = async () => {
