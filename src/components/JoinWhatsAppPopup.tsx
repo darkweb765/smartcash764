@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-// TODO: Replace with your actual WhatsApp channel invite URL
-const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029VaSmartPayOfficial";
+const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40";
 
 const KEY_JOINED = "smartpay_whatsapp_joined";
 const KEY_FIRST_SEEN = "smartpay_whatsapp_first_seen";
@@ -76,7 +75,26 @@ const JoinWhatsAppPopup = () => {
     localStorage.setItem(KEY_JOINED, "1");
     localStorage.setItem(KEY_LAST_SHOWN, String(Date.now()));
     setOpen(false);
-    window.open(WHATSAPP_CHANNEL_URL, "_blank", "noopener,noreferrer");
+
+    // Try to open the installed WhatsApp app directly (mobile).
+    // WhatsApp's https channel link is a universal link that opens the app when installed.
+    const ua = navigator.userAgent || "";
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+
+    if (isMobile) {
+      // Direct app navigation — no new tab/browser window.
+      window.location.href = WHATSAPP_CHANNEL_URL;
+
+      // Fallback: if WhatsApp isn't installed, nothing will handle the link.
+      // After a short delay, if we're still here, show install prompt.
+      setTimeout(() => {
+        if (document.visibilityState === "visible") {
+          alert("WhatsApp is not installed. Please install WhatsApp to join our channel.");
+        }
+      }, 1500);
+    } else {
+      window.location.href = WHATSAPP_CHANNEL_URL;
+    }
   };
 
   const handleClose = () => {
