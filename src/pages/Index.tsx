@@ -6,6 +6,7 @@ import GiftIcon from "@/components/GiftIcon";
 import ServiceGrid from "@/components/ServiceGrid";
 import BottomNav from "@/components/BottomNav";
 import SuccessDialog from "@/components/SuccessDialog";
+import JoinWhatsAppPopup from "@/components/JoinWhatsAppPopup";
 import { useAppContext } from "@/contexts/AppContext";
 import { playSuccessSound } from "@/utils/sounds";
 
@@ -48,6 +49,8 @@ const Index = () => {
         open={showSuccessDialog} 
         onClose={() => setShowSuccessDialog(false)} 
       />
+
+      <JoinWhatsAppPopup />
     </div>
   );
 };
