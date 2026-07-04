@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-// TODO: Replace with your actual WhatsApp channel invite URL
-const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029VaSmartPayOfficial";
+const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40";
 
 const KEY_JOINED = "smartpay_whatsapp_joined";
 const KEY_FIRST_SEEN = "smartpay_whatsapp_first_seen";
