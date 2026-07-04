@@ -49,6 +49,8 @@ const Index = () => {
         open={showSuccessDialog} 
         onClose={() => setShowSuccessDialog(false)} 
       />
+
+      <JoinWhatsAppPopup />
     </div>
   );
 };
