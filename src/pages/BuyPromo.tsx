@@ -492,6 +492,21 @@ const BuyPromo = () => {
           </div>
           <p className="text-green-primary text-center text-sm mb-4">Complete this bank transfer to proceed</p>
 
+          {paymentError && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
+              <p className="text-sm font-semibold text-red-600 mb-2">
+                {paymentError}
+              </p>
+              <button
+                onClick={fetchDetails}
+                className="text-sm font-bold text-red-600 underline"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {!paymentError && (
           <div className="bg-muted rounded-2xl p-5 space-y-5">
             {/* Amount */}
             <div>
@@ -514,8 +529,12 @@ const BuyPromo = () => {
                 <span className="text-sm text-muted-foreground">Account Number</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-foreground">{paymentDetails?.account_number || "Loading..."}</span>
-                <button onClick={() => handleCopy(paymentDetails?.account_number || "", "account")} className="px-4 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground">
+                <span className="text-lg font-bold text-foreground">{paymentDetails?.account_number || "Loading…"}</span>
+                <button
+                  disabled={!paymentDetails?.account_number}
+                  onClick={() => paymentDetails?.account_number && handleCopy(paymentDetails.account_number, "account")}
+                  className="px-4 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground disabled:opacity-40"
+                >
                   {copiedField === "account" ? <Check className="w-4 h-4 text-green-primary" /> : "Copy"}
                 </button>
               </div>
@@ -527,7 +546,7 @@ const BuyPromo = () => {
                 <span className="text-xs bg-green-primary/20 text-green-primary px-1.5 py-0.5 rounded">🏦</span>
                 <span className="text-sm text-muted-foreground">Bank Name</span>
               </div>
-              <span className="text-lg font-bold text-foreground">{paymentDetails?.bank_name || "Loading..."}</span>
+              <span className="text-lg font-bold text-foreground">{paymentDetails?.bank_name || "Loading…"}</span>
             </div>
 
             {/* Account Name */}
@@ -536,12 +555,16 @@ const BuyPromo = () => {
                 <span className="text-xs bg-green-primary/20 text-green-primary px-1.5 py-0.5 rounded">👤</span>
                 <span className="text-sm text-muted-foreground">Account Name</span>
               </div>
-              <span className="text-lg font-bold text-foreground">{paymentDetails?.account_name || "Loading..."}</span>
+              <span className="text-lg font-bold text-foreground">{paymentDetails?.account_name || "Loading…"}</span>
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed">
               Transfer the exact amount to the account above. Your Promo Code will be generated automatically after payment confirmation. Use your registered name as the transfer description for faster processing.
             </p>
+          </div>
+          )}
+
+          <div className="bg-muted rounded-2xl p-5 mt-4 space-y-5">
 
             {/* Receipt upload */}
             <div>
