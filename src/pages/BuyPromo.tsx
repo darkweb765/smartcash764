@@ -148,32 +148,50 @@ const BuyPromo = () => {
   }, []);
 
 
-  // Fetch payment details when entering account screen
+  // Fetch payment details when entering account screen — always fresh, no cache.
   const fetchDetails = async () => {
+    setPaymentError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/admin-actions?action=get_payment_details`,
+        `https://${projectId}.supabase.co/functions/v1/admin-actions?action=get_payment_details&_ts=${Date.now()}`,
         {
+          cache: "no-store",
           headers: {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${session?.access_token || ""}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
           },
         }
       );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      if (!data || !data.account_number || !data.bank_name || !data.account_name) {
+        throw new Error("Incomplete payment details");
+      }
+      if (isBlockedAccount(data)) {
+        console.error("Blocked deprecated account returned by server", data);
+        setPaymentDetails(null);
+        setPaymentError("Unable to load payment details. Please check your internet connection and try again.");
+        return;
+      }
       setPaymentDetails(data);
     } catch (e) {
       console.error("Error fetching payment details:", e);
+      setPaymentDetails(null);
+      setPaymentError("Unable to load payment details. Please check your internet connection and try again.");
     }
   };
 
   useEffect(() => {
-    if (pageState === "account" && !paymentDetails) {
+    if (pageState === "account") {
+      // Always clear stale details and refetch when entering the account screen.
+      setPaymentDetails(null);
       fetchDetails();
     }
-  }, [pageState, paymentDetails]);
+  }, [pageState]);
 
   // Realtime: refresh details if admin updates them
   useEffect(() => {
