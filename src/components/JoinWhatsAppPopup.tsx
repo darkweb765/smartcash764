@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Send } from "lucide-react";
 
 const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40";
 
@@ -110,7 +111,11 @@ const JoinWhatsAppPopup = () => {
       }}
     >
       <DialogContent
-        className="max-w-sm rounded-2xl bg-white border-0 p-0 overflow-hidden [&>button]:hidden"
+        className="max-w-sm rounded-3xl border-0 p-0 overflow-hidden [&>button]:hidden shadow-2xl"
+        style={{
+          background:
+            "linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%)",
+        }}
         onPointerDownOutside={(e) => {
           if (firstTime) e.preventDefault();
         }}
@@ -118,35 +123,53 @@ const JoinWhatsAppPopup = () => {
           if (firstTime) e.preventDefault();
         }}
       >
-        <div className="p-6 flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-full bg-[#25D366] flex items-center justify-center shadow-md mb-4">
-            <WhatsAppIcon className="w-9 h-9 text-white" />
+        {/* Shine overlay */}
+        <div
+          className="pointer-events-none absolute inset-0 rounded-3xl"
+          style={{
+            background:
+              "radial-gradient(120% 60% at 50% 0%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 55%)",
+          }}
+        />
+        <div className="relative p-7 flex flex-col items-center text-center">
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg mb-5 ring-4 ring-white/20"
+            style={{
+              background:
+                "linear-gradient(135deg, #60a5fa 0%, #3b82f6 60%, #2563eb 100%)",
+            }}
+          >
+            <Send className="w-9 h-9 text-white -rotate-12" strokeWidth={2.2} />
           </div>
-          <h2 className="text-lg font-bold text-gray-900 mb-2">
-            Join Official SmartPay WhatsApp Channel
+          <h2 className="text-xl font-extrabold text-white mb-2 drop-shadow">
+            Join Official SmartPay Channel
           </h2>
-          <p className="text-sm text-gray-600 mb-6">
+          <p className="text-sm text-white/90 mb-6 leading-relaxed">
             Stay updated with the latest news, promotions, and exclusive offers from SmartPay!
           </p>
           <div className="w-full flex gap-3">
             {!firstTime && (
               <Button
-                variant="outline"
+                variant="ghost"
                 onClick={handleClose}
-                className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
+                className="flex-1 rounded-xl bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:text-white font-semibold backdrop-blur-sm"
               >
                 Close
               </Button>
             )}
             <Button
               onClick={handleJoin}
-              className="flex-1 bg-[#25D366] hover:bg-[#1ebe5b] text-white font-semibold"
+              className="flex-1 rounded-xl text-white font-semibold shadow-lg border-0"
+              style={{
+                background:
+                  "linear-gradient(135deg, #60a5fa 0%, #3b82f6 55%, #2563eb 100%)",
+              }}
             >
-              <WhatsAppIcon className="w-4 h-4 mr-1" />
+              <Send className="w-4 h-4 mr-1.5 -rotate-12" strokeWidth={2.4} />
               Join Now
             </Button>
           </div>
-          <p className="text-xs text-gray-500 mt-4">
+          <p className="text-xs text-white/80 mt-4">
             {firstTime ? "Join our channel to continue" : "Tap Join to follow our channel"}
           </p>
         </div>
