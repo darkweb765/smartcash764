@@ -18,9 +18,21 @@ const WhatsAppIcon = ({ className = "w-10 h-10" }: { className?: string }) => (
   </svg>
 );
 
+const getInstallUrl = () => {
+  const ua = navigator.userAgent || "";
+  if (/iPhone|iPad|iPod/i.test(ua)) {
+    return "https://apps.apple.com/app/whatsapp-messenger/id310633997";
+  }
+  if (/Android/i.test(ua)) {
+    return "https://play.google.com/store/apps/details?id=com.whatsapp";
+  }
+  return "https://www.whatsapp.com/download";
+};
+
 const JoinWhatsAppPopup = () => {
   const [open, setOpen] = useState(false);
   const [firstTime, setFirstTime] = useState(false);
+  const [showInstall, setShowInstall] = useState(false);
 
   useEffect(() => {
     const now = Date.now();
