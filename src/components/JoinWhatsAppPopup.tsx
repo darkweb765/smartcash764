@@ -102,7 +102,7 @@ const JoinWhatsAppPopup = () => {
       // After a short delay, if we're still here, show install prompt.
       setTimeout(() => {
         if (document.visibilityState === "visible") {
-          alert("WhatsApp is not installed. Please install WhatsApp to join our channel.");
+          setShowInstall(true);
         }
       }, 1500);
     } else {
