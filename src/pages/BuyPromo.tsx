@@ -592,7 +592,7 @@ const BuyPromo = () => {
 
             <Button
               onClick={handleTransferMade}
-              disabled={uploadingReceipt || !receiptFile}
+              disabled={uploadingReceipt || !receiptFile || !paymentDetails || !!paymentError}
               className="w-full py-6 bg-yellow-500 hover:bg-yellow-500/90 text-foreground font-bold text-base rounded-xl disabled:opacity-50"
             >
               {uploadingReceipt ? "Uploading..." : "I have made this bank Transfer"}
