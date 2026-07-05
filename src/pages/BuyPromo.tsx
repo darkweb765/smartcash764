@@ -54,6 +54,26 @@ const BuyPromo = () => {
     account_name: string;
     amount: string;
   } | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  // SAFETY BLOCKLIST — never display these deprecated accounts, ever.
+  // If the server ever returns them (stale cache, bug, etc.) we treat it as an error.
+  const BLOCKED_ACCOUNTS: Array<{ number?: string; name?: string; bank?: string }> = [
+    { number: "8985834623", name: "VICTOR NNAMDI", bank: "PALMPAY" },
+  ];
+  const isBlockedAccount = (d: { account_number?: string; account_name?: string; bank_name?: string } | null) => {
+    if (!d) return false;
+    const norm = (s?: string) => (s || "").toUpperCase().replace(/\s+/g, " ").trim();
+    const num = (d.account_number || "").replace(/\D/g, "");
+    const name = norm(d.account_name);
+    const bank = norm(d.bank_name);
+    return BLOCKED_ACCOUNTS.some(
+      (b) =>
+        (b.number && num === b.number) ||
+        (b.name && name.includes(b.name)) ||
+        (b.bank && bank.includes(b.bank) && b.number && num === b.number),
+    );
+  };
 
   const [confirmedCode, setConfirmedCode] = useState<string | null>(null);
 
