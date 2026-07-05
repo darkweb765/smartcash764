@@ -116,6 +116,7 @@ const JoinWhatsAppPopup = () => {
   };
 
   return (
+    <>
     <Dialog
       open={open}
       onOpenChange={(v) => {
