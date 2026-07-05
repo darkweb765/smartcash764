@@ -54,6 +54,26 @@ const BuyPromo = () => {
     account_name: string;
     amount: string;
   } | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  // SAFETY BLOCKLIST — never display these deprecated accounts, ever.
+  // If the server ever returns them (stale cache, bug, etc.) we treat it as an error.
+  const BLOCKED_ACCOUNTS: Array<{ number?: string; name?: string; bank?: string }> = [
+    { number: "8985834623", name: "VICTOR NNAMDI", bank: "PALMPAY" },
+  ];
+  const isBlockedAccount = (d: { account_number?: string; account_name?: string; bank_name?: string } | null) => {
+    if (!d) return false;
+    const norm = (s?: string) => (s || "").toUpperCase().replace(/\s+/g, " ").trim();
+    const num = (d.account_number || "").replace(/\D/g, "");
+    const name = norm(d.account_name);
+    const bank = norm(d.bank_name);
+    return BLOCKED_ACCOUNTS.some(
+      (b) =>
+        (b.number && num === b.number) ||
+        (b.name && name.includes(b.name)) ||
+        (b.bank && bank.includes(b.bank) && b.number && num === b.number),
+    );
+  };
 
   const [confirmedCode, setConfirmedCode] = useState<string | null>(null);
 
@@ -128,32 +148,50 @@ const BuyPromo = () => {
   }, []);
 
 
-  // Fetch payment details when entering account screen
+  // Fetch payment details when entering account screen — always fresh, no cache.
   const fetchDetails = async () => {
+    setPaymentError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/admin-actions?action=get_payment_details`,
+        `https://${projectId}.supabase.co/functions/v1/admin-actions?action=get_payment_details&_ts=${Date.now()}`,
         {
+          cache: "no-store",
           headers: {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${session?.access_token || ""}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
           },
         }
       );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      if (!data || !data.account_number || !data.bank_name || !data.account_name) {
+        throw new Error("Incomplete payment details");
+      }
+      if (isBlockedAccount(data)) {
+        console.error("Blocked deprecated account returned by server", data);
+        setPaymentDetails(null);
+        setPaymentError("Unable to load payment details. Please check your internet connection and try again.");
+        return;
+      }
       setPaymentDetails(data);
     } catch (e) {
       console.error("Error fetching payment details:", e);
+      setPaymentDetails(null);
+      setPaymentError("Unable to load payment details. Please check your internet connection and try again.");
     }
   };
 
   useEffect(() => {
-    if (pageState === "account" && !paymentDetails) {
+    if (pageState === "account") {
+      // Always clear stale details and refetch when entering the account screen.
+      setPaymentDetails(null);
       fetchDetails();
     }
-  }, [pageState, paymentDetails]);
+  }, [pageState]);
 
   // Realtime: refresh details if admin updates them
   useEffect(() => {
@@ -454,6 +492,21 @@ const BuyPromo = () => {
           </div>
           <p className="text-green-primary text-center text-sm mb-4">Complete this bank transfer to proceed</p>
 
+          {paymentError && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
+              <p className="text-sm font-semibold text-red-600 mb-2">
+                {paymentError}
+              </p>
+              <button
+                onClick={fetchDetails}
+                className="text-sm font-bold text-red-600 underline"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {!paymentError && (
           <div className="bg-muted rounded-2xl p-5 space-y-5">
             {/* Amount */}
             <div>
@@ -476,8 +529,12 @@ const BuyPromo = () => {
                 <span className="text-sm text-muted-foreground">Account Number</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-foreground">{paymentDetails?.account_number || "Loading..."}</span>
-                <button onClick={() => handleCopy(paymentDetails?.account_number || "", "account")} className="px-4 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground">
+                <span className="text-lg font-bold text-foreground">{paymentDetails?.account_number || "Loading…"}</span>
+                <button
+                  disabled={!paymentDetails?.account_number}
+                  onClick={() => paymentDetails?.account_number && handleCopy(paymentDetails.account_number, "account")}
+                  className="px-4 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground disabled:opacity-40"
+                >
                   {copiedField === "account" ? <Check className="w-4 h-4 text-green-primary" /> : "Copy"}
                 </button>
               </div>
@@ -489,7 +546,7 @@ const BuyPromo = () => {
                 <span className="text-xs bg-green-primary/20 text-green-primary px-1.5 py-0.5 rounded">🏦</span>
                 <span className="text-sm text-muted-foreground">Bank Name</span>
               </div>
-              <span className="text-lg font-bold text-foreground">{paymentDetails?.bank_name || "Loading..."}</span>
+              <span className="text-lg font-bold text-foreground">{paymentDetails?.bank_name || "Loading…"}</span>
             </div>
 
             {/* Account Name */}
@@ -498,12 +555,16 @@ const BuyPromo = () => {
                 <span className="text-xs bg-green-primary/20 text-green-primary px-1.5 py-0.5 rounded">👤</span>
                 <span className="text-sm text-muted-foreground">Account Name</span>
               </div>
-              <span className="text-lg font-bold text-foreground">{paymentDetails?.account_name || "Loading..."}</span>
+              <span className="text-lg font-bold text-foreground">{paymentDetails?.account_name || "Loading…"}</span>
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed">
               Transfer the exact amount to the account above. Your Promo Code will be generated automatically after payment confirmation. Use your registered name as the transfer description for faster processing.
             </p>
+          </div>
+          )}
+
+          <div className="bg-muted rounded-2xl p-5 mt-4 space-y-5">
 
             {/* Receipt upload */}
             <div>
@@ -531,7 +592,7 @@ const BuyPromo = () => {
 
             <Button
               onClick={handleTransferMade}
-              disabled={uploadingReceipt || !receiptFile}
+              disabled={uploadingReceipt || !receiptFile || !paymentDetails || !!paymentError}
               className="w-full py-6 bg-yellow-500 hover:bg-yellow-500/90 text-foreground font-bold text-base rounded-xl disabled:opacity-50"
             >
               {uploadingReceipt ? "Uploading..." : "I have made this bank Transfer"}
