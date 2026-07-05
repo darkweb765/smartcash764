@@ -188,6 +188,42 @@ const JoinWhatsAppPopup = () => {
         </div>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={showInstall} onOpenChange={setShowInstall}>
+      <DialogContent className="max-w-sm rounded-2xl bg-white border-0 p-0 overflow-hidden [&>button]:hidden shadow-2xl">
+        <div className="p-6 flex flex-col items-center text-center">
+          <div className="w-16 h-16 rounded-full bg-[#25D366] flex items-center justify-center shadow-md mb-4">
+            <WhatsAppIcon className="w-9 h-9 text-white" />
+          </div>
+          <h2 className="text-lg font-bold text-gray-900 mb-2">
+            WhatsApp is not installed
+          </h2>
+          <p className="text-sm text-gray-600 mb-6">
+            To join our channel, please install WhatsApp on your device first. Tap the button below to install it now.
+          </p>
+          <div className="w-full flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowInstall(false)}
+              className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50"
+            >
+              Not now
+            </Button>
+            <Button
+              onClick={() => {
+                setShowInstall(false);
+                window.location.href = getInstallUrl();
+              }}
+              className="flex-1 bg-[#25D366] hover:bg-[#1ebe5b] text-white font-semibold"
+            >
+              <WhatsAppIcon className="w-4 h-4 mr-1.5" />
+              Install WhatsApp
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 
