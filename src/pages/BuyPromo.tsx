@@ -172,8 +172,17 @@ const BuyPromo = () => {
 
 
   // Fetch payment details when entering account screen — always fresh, no cache.
+  // Falls back to locally cached account when offline / fetch fails.
   const fetchDetails = async () => {
-    setPaymentError(null);
+    // If we're clearly offline, use cache immediately without erroring.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      const cached = readCachedPayment();
+      if (cached) {
+        setPaymentDetails(cached);
+        setPaymentError(null);
+        return;
+      }
+    }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
@@ -196,25 +205,61 @@ const BuyPromo = () => {
       }
       if (isBlockedAccount(data)) {
         console.error("Blocked deprecated account returned by server", data);
-        setPaymentDetails(null);
-        setPaymentError("Unable to load payment details. Please check your internet connection and try again.");
+        // Fall back to cached (already validated) account if present.
+        const cached = readCachedPayment();
+        if (cached) {
+          setPaymentDetails(cached);
+          setPaymentError(null);
+        } else {
+          setPaymentDetails(null);
+          setPaymentError("Unable to load payment details. Please check your internet connection and try again.");
+        }
         return;
       }
-      setPaymentDetails(data);
+      const clean = {
+        account_number: data.account_number,
+        bank_name: data.bank_name,
+        account_name: data.account_name,
+        amount: data.amount ?? "7200",
+      };
+      setPaymentDetails(clean);
+      setPaymentError(null);
+      writeCachedPayment(clean);
     } catch (e) {
       console.error("Error fetching payment details:", e);
-      setPaymentDetails(null);
-      setPaymentError("Unable to load payment details. Please check your internet connection and try again.");
+      const cached = readCachedPayment();
+      if (cached) {
+        // Offline / server unreachable — use last known good account silently.
+        setPaymentDetails(cached);
+        setPaymentError(null);
+      } else {
+        setPaymentDetails(null);
+        setPaymentError("Unable to load payment details. Please check your internet connection and try again.");
+      }
     }
   };
 
   useEffect(() => {
     if (pageState === "account") {
-      // Always clear stale details and refetch when entering the account screen.
-      setPaymentDetails(null);
+      // Preload from cache immediately so the user sees the last known
+      // good account even before (or without) a network response.
+      const cached = readCachedPayment();
+      if (cached) {
+        setPaymentDetails(cached);
+        setPaymentError(null);
+      } else {
+        setPaymentDetails(null);
+      }
       fetchDetails();
     }
   }, [pageState]);
+
+  // Refresh from server the moment connectivity returns.
+  useEffect(() => {
+    const onOnline = () => { fetchDetails(); };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
 
   // Realtime: refresh details if admin updates them
   useEffect(() => {
