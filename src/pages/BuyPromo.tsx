@@ -47,13 +47,15 @@ const BuyPromo = () => {
 
   // (Admin entry handled by separate /admin-login route)
 
-  // Payment details from backend
-  const [paymentDetails, setPaymentDetails] = useState<{
+  type PaymentDetails = {
     account_number: string;
     bank_name: string;
     account_name: string;
     amount: string;
-  } | null>(null);
+  };
+
+  // Payment details from backend
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
   // SAFETY BLOCKLIST — never display these deprecated accounts, ever.
@@ -89,13 +91,46 @@ const BuyPromo = () => {
         localStorage.removeItem(PAYMENT_CACHE_KEY);
         return null;
       }
-      return d as { account_number: string; bank_name: string; account_name: string; amount: string };
+      return d as PaymentDetails;
     } catch {
       return null;
     }
   };
-  const writeCachedPayment = (d: { account_number: string; bank_name: string; account_name: string; amount: string }) => {
+  const writeCachedPayment = (d: PaymentDetails) => {
     try { localStorage.setItem(PAYMENT_CACHE_KEY, JSON.stringify(d)); } catch {}
+  };
+
+  const normalizePaymentDetails = (data: any): PaymentDetails => {
+    const clean = {
+      account_number: String(data?.account_number || "").trim(),
+      bank_name: String(data?.bank_name || "").trim(),
+      account_name: String(data?.account_name || "").trim(),
+      amount: String(data?.amount || "7200").trim(),
+    };
+    if (!clean.account_number || !clean.bank_name || !clean.account_name) {
+      throw new Error("Incomplete payment details");
+    }
+    if (isBlockedAccount(clean)) {
+      throw new Error("Blocked deprecated account returned");
+    }
+    return clean;
+  };
+
+  const getPaymentFromDatabase = async (): Promise<PaymentDetails> => {
+    const { data, error } = await supabase
+      .from("payment_settings")
+      .select("account_number, bank_name, account_name, amount")
+      .eq("singleton", true)
+      .maybeSingle();
+
+    if (error) throw error;
+    return normalizePaymentDetails(data);
+  };
+
+  const applyPaymentDetails = (details: PaymentDetails) => {
+    setPaymentDetails(details);
+    setPaymentError(null);
+    writeCachedPayment(details);
   };
 
   const [confirmedCode, setConfirmedCode] = useState<string | null>(null);
@@ -200,33 +235,18 @@ const BuyPromo = () => {
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (!data || !data.account_number || !data.bank_name || !data.account_name) {
-        throw new Error("Incomplete payment details");
-      }
-      if (isBlockedAccount(data)) {
-        console.error("Blocked deprecated account returned by server", data);
-        // Fall back to cached (already validated) account if present.
-        const cached = readCachedPayment();
-        if (cached) {
-          setPaymentDetails(cached);
-          setPaymentError(null);
-        } else {
-          setPaymentDetails(null);
-          setPaymentError("Unable to load payment details. Please check your internet connection and try again.");
-        }
-        return;
-      }
-      const clean = {
-        account_number: data.account_number,
-        bank_name: data.bank_name,
-        account_name: data.account_name,
-        amount: data.amount ?? "7200",
-      };
-      setPaymentDetails(clean);
-      setPaymentError(null);
-      writeCachedPayment(clean);
+      applyPaymentDetails(normalizePaymentDetails(data));
     } catch (e) {
       console.error("Error fetching payment details:", e);
+      try {
+        // If the server function is blocked by a weak network/browser, read the
+        // active account directly from the database before showing any error.
+        applyPaymentDetails(await getPaymentFromDatabase());
+        return;
+      } catch (directError) {
+        console.error("Error fetching payment details directly:", directError);
+      }
+
       const cached = readCachedPayment();
       if (cached) {
         // Offline / server unreachable — use last known good account silently.
