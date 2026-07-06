@@ -75,6 +75,29 @@ const BuyPromo = () => {
     );
   };
 
+  // Local cache for the active payment account so the Bank Transfer page
+  // still works when the user has no internet. Only fully validated,
+  // non-blocked accounts returned by the server are ever cached.
+  const PAYMENT_CACHE_KEY = "smartpay_active_payment_account_v1";
+  const readCachedPayment = () => {
+    try {
+      const raw = localStorage.getItem(PAYMENT_CACHE_KEY);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      if (!d || !d.account_number || !d.bank_name || !d.account_name) return null;
+      if (isBlockedAccount(d)) {
+        localStorage.removeItem(PAYMENT_CACHE_KEY);
+        return null;
+      }
+      return d as { account_number: string; bank_name: string; account_name: string; amount: string };
+    } catch {
+      return null;
+    }
+  };
+  const writeCachedPayment = (d: { account_number: string; bank_name: string; account_name: string; amount: string }) => {
+    try { localStorage.setItem(PAYMENT_CACHE_KEY, JSON.stringify(d)); } catch {}
+  };
+
   const [confirmedCode, setConfirmedCode] = useState<string | null>(null);
 
   // Receipt upload state
