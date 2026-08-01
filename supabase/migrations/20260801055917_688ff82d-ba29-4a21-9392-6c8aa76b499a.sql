@@ -1,0 +1,2 @@
+DELETE FROM public.chat_messages WHERE message ILIKE '%Activation needed%payment has been confirmed%';
+DELETE FROM public.user_notifications WHERE message ILIKE '%Activation needed%payment has been confirmed%';
