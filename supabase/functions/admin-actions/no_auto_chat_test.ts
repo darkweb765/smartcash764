@@ -8,11 +8,7 @@ Deno.test("payment verification path does not insert any support chat message", 
   assert(start > -1, "verify_payment handler must exist");
   const region = source.slice(start, start + 4000);
 
-  // The activation auto-chat helper must be a no-op stub
-  assert(
-    /sendActivationChat\s*=\s*async\s*\([^)]*\)\s*=>\s*\{\s*\/\*\s*auto chat disabled/.test(source),
-    "sendActivationChat must be a disabled no-op stub",
-  );
+  assertEquals(source.includes("sendActivationChat"), false, "Auto-chat helper must not exist");
 
   // No chat_messages insert may occur inside the verify_purchase region
   const chatInsertInVerify = /\.from\(\s*["'`]chat_messages["'`]\s*\)\s*\.insert/.test(region);

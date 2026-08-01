@@ -9,6 +9,12 @@ interface SupportMsg {
   created_at: string;
 }
 
+const REMOVED_AUTOMATIC_MESSAGE =
+  "Activation needed. Your payment has been confirmed successfully. Please activate your promo code and withdraw your money.";
+
+const isRemovedAutomaticMessage = (message: string) =>
+  message.replace(/^✅\s*/, "").trim() === REMOVED_AUTOMATIC_MESSAGE;
+
 const SupportReplyPopup = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -34,7 +40,7 @@ const SupportReplyPopup = () => {
       .eq("user_id", uid)
       .order("created_at", { ascending: false })
       .limit(1);
-    const last = data?.[0];
+    const last = data?.find((message) => !isRemovedAutomaticMessage(message.message));
     if (last && last.sender_type === "support") {
       setPending({ id: last.id, message: last.message, created_at: last.created_at });
     } else {
@@ -55,7 +61,7 @@ const SupportReplyPopup = () => {
         filter: `user_id=eq.${userId}`,
       }, (payload: any) => {
         const msg = payload.new;
-        if (msg.sender_type === "support") {
+        if (msg.sender_type === "support" && !isRemovedAutomaticMessage(msg.message)) {
           setPending({ id: msg.id, message: msg.message, created_at: msg.created_at });
         } else if (msg.sender_type === "user") {
           setPending(null);
