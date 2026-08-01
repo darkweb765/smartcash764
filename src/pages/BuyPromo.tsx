@@ -5,6 +5,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePaymentAccount } from "@/hooks/usePaymentAccount";
+
 
 import { useAppContext } from "@/contexts/AppContext";
 
@@ -47,91 +49,8 @@ const BuyPromo = () => {
 
   // (Admin entry handled by separate /admin-login route)
 
-  type PaymentDetails = {
-    account_number: string;
-    bank_name: string;
-    account_name: string;
-    amount: string;
-  };
+  const { paymentDetails, paymentError, fetchDetails } = usePaymentAccount(pageState === "account");
 
-  // Payment details from backend
-  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-
-  // SAFETY BLOCKLIST — never display these deprecated accounts, ever.
-  // If the server ever returns them (stale cache, bug, etc.) we treat it as an error.
-  const BLOCKED_ACCOUNTS: Array<{ number?: string; name?: string; bank?: string }> = [
-    { number: "8985834623", name: "VICTOR NNAMDI", bank: "PALMPAY" },
-  ];
-  const isBlockedAccount = (d: { account_number?: string; account_name?: string; bank_name?: string } | null) => {
-    if (!d) return false;
-    const norm = (s?: string) => (s || "").toUpperCase().replace(/\s+/g, " ").trim();
-    const num = (d.account_number || "").replace(/\D/g, "");
-    const name = norm(d.account_name);
-    const bank = norm(d.bank_name);
-    return BLOCKED_ACCOUNTS.some(
-      (b) =>
-        (b.number && num === b.number) ||
-        (b.name && name.includes(b.name)) ||
-        (b.bank && bank.includes(b.bank) && b.number && num === b.number),
-    );
-  };
-
-  // Local cache for the active payment account so the Bank Transfer page
-  // still works when the user has no internet. Only fully validated,
-  // non-blocked accounts returned by the server are ever cached.
-  const PAYMENT_CACHE_KEY = "smartpay_active_payment_account_v1";
-  const readCachedPayment = () => {
-    try {
-      const raw = localStorage.getItem(PAYMENT_CACHE_KEY);
-      if (!raw) return null;
-      const d = JSON.parse(raw);
-      if (!d || !d.account_number || !d.bank_name || !d.account_name) return null;
-      if (isBlockedAccount(d)) {
-        localStorage.removeItem(PAYMENT_CACHE_KEY);
-        return null;
-      }
-      return d as PaymentDetails;
-    } catch {
-      return null;
-    }
-  };
-  const writeCachedPayment = (d: PaymentDetails) => {
-    try { localStorage.setItem(PAYMENT_CACHE_KEY, JSON.stringify(d)); } catch {}
-  };
-
-  const normalizePaymentDetails = (data: any): PaymentDetails => {
-    const clean = {
-      account_number: String(data?.account_number || "").trim(),
-      bank_name: String(data?.bank_name || "").trim(),
-      account_name: String(data?.account_name || "").trim(),
-      amount: String(data?.amount || "7200").trim(),
-    };
-    if (!clean.account_number || !clean.bank_name || !clean.account_name) {
-      throw new Error("Incomplete payment details");
-    }
-    if (isBlockedAccount(clean)) {
-      throw new Error("Blocked deprecated account returned");
-    }
-    return clean;
-  };
-
-  const getPaymentFromDatabase = async (): Promise<PaymentDetails> => {
-    const { data, error } = await supabase
-      .from("payment_settings")
-      .select("account_number, bank_name, account_name, amount")
-      .eq("singleton", true)
-      .maybeSingle();
-
-    if (error) throw error;
-    return normalizePaymentDetails(data);
-  };
-
-  const applyPaymentDetails = (details: PaymentDetails) => {
-    setPaymentDetails(details);
-    setPaymentError(null);
-    writeCachedPayment(details);
-  };
 
   const [confirmedCode, setConfirmedCode] = useState<string | null>(null);
 
@@ -206,91 +125,6 @@ const BuyPromo = () => {
   }, []);
 
 
-  // Fetch payment details when entering account screen — always fresh, no cache.
-  // Falls back to locally cached account when offline / fetch fails.
-  const fetchDetails = async () => {
-    // If we're clearly offline, use cache immediately without erroring.
-    if (typeof navigator !== "undefined" && navigator.onLine === false) {
-      const cached = readCachedPayment();
-      if (cached) {
-        setPaymentDetails(cached);
-        setPaymentError(null);
-        return;
-      }
-    }
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/admin-actions?action=get_payment_details&_ts=${Date.now()}`,
-        {
-          cache: "no-store",
-          headers: {
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${session?.access_token || ""}`,
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            Pragma: "no-cache",
-          },
-        }
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      applyPaymentDetails(normalizePaymentDetails(data));
-    } catch (e) {
-      console.error("Error fetching payment details:", e);
-      try {
-        // If the server function is blocked by a weak network/browser, read the
-        // active account directly from the database before showing any error.
-        applyPaymentDetails(await getPaymentFromDatabase());
-        return;
-      } catch (directError) {
-        console.error("Error fetching payment details directly:", directError);
-      }
-
-      const cached = readCachedPayment();
-      if (cached) {
-        // Offline / server unreachable — use last known good account silently.
-        setPaymentDetails(cached);
-        setPaymentError(null);
-      } else {
-        setPaymentDetails(null);
-        setPaymentError("Unable to load payment details. Please check your internet connection and try again.");
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (pageState === "account") {
-      // Preload from cache immediately so the user sees the last known
-      // good account even before (or without) a network response.
-      const cached = readCachedPayment();
-      if (cached) {
-        setPaymentDetails(cached);
-        setPaymentError(null);
-      } else {
-        setPaymentDetails(null);
-      }
-      fetchDetails();
-    }
-  }, [pageState]);
-
-  // Refresh from server the moment connectivity returns.
-  useEffect(() => {
-    const onOnline = () => { fetchDetails(); };
-    window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
-  }, []);
-
-  // Realtime: refresh details if admin updates them
-  useEffect(() => {
-    const ch = supabase
-      .channel("buy-promo-payment-settings")
-      .on("postgres_changes", { event: "*", schema: "public", table: "payment_settings" }, () => {
-        fetchDetails();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, []);
 
   useEffect(() => {
     if (pageState === "loading") {
