@@ -87,6 +87,10 @@ const BuyPromo = () => {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
+  // Support WhatsApp popup state
+  const [transferClickCount, setTransferClickCount] = useState(() => getStoredTransferCount());
+  const [showSupportPopup, setShowSupportPopup] = useState(false);
+
   const handleReceiptSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
