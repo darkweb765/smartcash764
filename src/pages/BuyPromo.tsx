@@ -115,6 +115,8 @@ const BuyPromo = () => {
 
   const showConfirmed = (code: string, at = Date.now()) => {
     localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code, at }));
+    clearStoredTransferCount();
+    setTransferClickCount(0);
     setConfirmedCode(code);
     setPageState("confirmed");
   };
