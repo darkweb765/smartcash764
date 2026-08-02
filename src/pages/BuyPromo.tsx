@@ -274,9 +274,10 @@ const BuyPromo = () => {
       return;
     }
 
-    const nextCount = transferClickCount + 1;
+    const nextCount = getStoredTransferCount() + 1;
     setTransferClickCount(nextCount);
     setStoredTransferCount(nextCount);
+
 
     if (nextCount >= MAX_TRANSFER_CLICKS) {
       setShowSupportPopup(true);
