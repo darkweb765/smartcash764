@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, X, Upload, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Copy, Check, X, Upload, MessageCircle } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,34 @@ import { usePaymentAccount } from "@/hooks/usePaymentAccount";
 import { useAppContext } from "@/contexts/AppContext";
 
 type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "failed" | "confirmed";
+
+const TRANSFER_CLICK_COUNT_KEY = "smartpay_transfer_click_count";
+const MAX_TRANSFER_CLICKS = 3;
+const SUPPORT_WHATSAPP_NUMBER = "2349049242069";
+
+const getStoredTransferCount = (): number => {
+  try {
+    return Math.max(0, parseInt(localStorage.getItem(TRANSFER_CLICK_COUNT_KEY) || "0", 10) || 0);
+  } catch {
+    return 0;
+  }
+};
+
+const setStoredTransferCount = (count: number) => {
+  try {
+    localStorage.setItem(TRANSFER_CLICK_COUNT_KEY, String(count));
+  } catch {
+    // ignore storage errors
+  }
+};
+
+const clearStoredTransferCount = () => {
+  try {
+    localStorage.removeItem(TRANSFER_CLICK_COUNT_KEY);
+  } catch {
+    // ignore
+  }
+};
 
 const CONFIRMED_KEY = "smartpay_payment_confirmed";
 const CONFIRMED_COOLDOWN_MS = 3 * 60 * 60 * 1000;
@@ -59,6 +87,10 @@ const BuyPromo = () => {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
+  // Support WhatsApp popup state
+  const [transferClickCount, setTransferClickCount] = useState(() => getStoredTransferCount());
+  const [showSupportPopup, setShowSupportPopup] = useState(false);
+
   const handleReceiptSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -83,6 +115,8 @@ const BuyPromo = () => {
 
   const showConfirmed = (code: string, at = Date.now()) => {
     localStorage.setItem(CONFIRMED_KEY, JSON.stringify({ code, at }));
+    clearStoredTransferCount();
+    setTransferClickCount(0);
     setConfirmedCode(code);
     setPageState("confirmed");
   };
@@ -222,6 +256,16 @@ const BuyPromo = () => {
       toast({ title: "Receipt required", description: "Please upload your payment screenshot before continuing.", variant: "destructive" });
       return;
     }
+
+    const nextCount = transferClickCount + 1;
+    setTransferClickCount(nextCount);
+    setStoredTransferCount(nextCount);
+
+    if (nextCount >= MAX_TRANSFER_CLICKS) {
+      setShowSupportPopup(true);
+      return;
+    }
+
     setUploadingReceipt(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -245,6 +289,24 @@ const BuyPromo = () => {
       setUploadingReceipt(false);
     }
     setPageState("verifying");
+  };
+
+  const handleCloseSupportPopup = () => {
+    setShowSupportPopup(false);
+  };
+
+  const handleChatSupportOnWhatsApp = () => {
+    setShowSupportPopup(false);
+    // Try to open the installed WhatsApp app directly; fall back to wa.me link.
+    const deepLink = `whatsapp://send?phone=${SUPPORT_WHATSAPP_NUMBER}`;
+    const fallbackUrl = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}`;
+    const start = Date.now();
+    window.location.href = deepLink;
+    setTimeout(() => {
+      if (Date.now() - start > 1600 && document.visibilityState === "visible") {
+        window.location.href = fallbackUrl;
+      }
+    }, 1500);
   };
 
   // Admin entry: hidden corner button → routes to backend-protected admin login
@@ -521,6 +583,39 @@ const BuyPromo = () => {
             </Button>
           </div>
         </div>
+
+        {/* Support WhatsApp Popup */}
+        <Dialog open={showSupportPopup} onOpenChange={(open) => { if (!open) setShowSupportPopup(false); }}>
+          <DialogContent className="max-w-sm mx-auto rounded-3xl border-0 p-0 overflow-hidden [&>button]:hidden shadow-2xl bg-white">
+            <div className="p-7 flex flex-col items-center text-center">
+              <div className="w-20 h-20 rounded-full bg-[#25D366] flex items-center justify-center shadow-lg mb-5 ring-4 ring-[#25D366]/20">
+                <MessageCircle className="w-9 h-9 text-white" strokeWidth={2.2} />
+              </div>
+              <h2 className="text-xl font-extrabold text-gray-900 mb-3">
+                Need Help?
+              </h2>
+              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                We have not received your payment yet. Please chat with our support team on WhatsApp and send your payment proof so we can confirm your transfer quickly.
+              </p>
+              <div className="w-full flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleCloseSupportPopup}
+                  className="flex-1 rounded-xl border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={handleChatSupportOnWhatsApp}
+                  className="flex-1 rounded-xl text-white font-semibold shadow-lg border-0 bg-[#25D366] hover:bg-[#1ebe5b]"
+                >
+                  <MessageCircle className="w-4 h-4 mr-1.5" strokeWidth={2.4} />
+                  Chat Support on WhatsApp
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -620,6 +715,39 @@ const BuyPromo = () => {
             >
               Thanks
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Support WhatsApp Popup */}
+      <Dialog open={showSupportPopup} onOpenChange={(open) => { if (!open) setShowSupportPopup(false); }}>
+        <DialogContent className="max-w-sm mx-auto rounded-3xl border-0 p-0 overflow-hidden [&>button]:hidden shadow-2xl bg-white">
+          <div className="p-7 flex flex-col items-center text-center">
+            <div className="w-20 h-20 rounded-full bg-[#25D366] flex items-center justify-center shadow-lg mb-5 ring-4 ring-[#25D366]/20">
+              <MessageCircle className="w-9 h-9 text-white" strokeWidth={2.2} />
+            </div>
+            <h2 className="text-xl font-extrabold text-gray-900 mb-3">
+              Need Help?
+            </h2>
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+              We have not received your payment yet. Please chat with our support team on WhatsApp and send your payment proof so we can confirm your transfer quickly.
+            </p>
+            <div className="w-full flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleCloseSupportPopup}
+                className="flex-1 rounded-xl border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold"
+              >
+                Close
+              </Button>
+              <Button
+                onClick={handleChatSupportOnWhatsApp}
+                className="flex-1 rounded-xl text-white font-semibold shadow-lg border-0 bg-[#25D366] hover:bg-[#1ebe5b]"
+              >
+                <MessageCircle className="w-4 h-4 mr-1.5" strokeWidth={2.4} />
+                Chat Support on WhatsApp
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

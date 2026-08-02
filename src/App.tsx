@@ -55,6 +55,7 @@ const AppRoutes = () => {
       "smartcash_notifications",
       "smartpay_payment_confirmed",
       "smartpay_purchase_popup_dismissed_codes",
+      "smartpay_transfer_click_count",
     ];
     const LAST_USER_KEY = "smartpay_last_user_id";
 
