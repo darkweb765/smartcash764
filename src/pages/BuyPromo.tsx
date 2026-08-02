@@ -14,11 +14,27 @@ type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "fail
 
 const TRANSFER_CLICK_COUNT_KEY = "smartpay_transfer_click_count";
 const MAX_TRANSFER_CLICKS = 3;
+// After this window the click counter resets so the user can verify again
+const TRANSFER_CLICK_RESET_MS = 2 * 60 * 60 * 1000;
 const SUPPORT_WHATSAPP_NUMBER = "2349049242069";
 
 const getStoredTransferCount = (): number => {
   try {
-    return Math.max(0, parseInt(localStorage.getItem(TRANSFER_CLICK_COUNT_KEY) || "0", 10) || 0);
+    const raw = localStorage.getItem(TRANSFER_CLICK_COUNT_KEY);
+    if (!raw) return 0;
+    // New format: {"count":n,"at":timestamp}
+    if (raw.trim().startsWith("{")) {
+      const parsed = JSON.parse(raw) as { count?: number; at?: number };
+      const at = Number(parsed?.at) || 0;
+      if (!at || Date.now() - at >= TRANSFER_CLICK_RESET_MS) {
+        localStorage.removeItem(TRANSFER_CLICK_COUNT_KEY);
+        return 0;
+      }
+      return Math.max(0, Number(parsed?.count) || 0);
+    }
+    // Legacy format (plain number, no timestamp) — reset it
+    localStorage.removeItem(TRANSFER_CLICK_COUNT_KEY);
+    return 0;
   } catch {
     return 0;
   }
@@ -26,11 +42,12 @@ const getStoredTransferCount = (): number => {
 
 const setStoredTransferCount = (count: number) => {
   try {
-    localStorage.setItem(TRANSFER_CLICK_COUNT_KEY, String(count));
+    localStorage.setItem(TRANSFER_CLICK_COUNT_KEY, JSON.stringify({ count, at: Date.now() }));
   } catch {
     // ignore storage errors
   }
 };
+
 
 const clearStoredTransferCount = () => {
   try {
