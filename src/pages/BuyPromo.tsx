@@ -254,6 +254,16 @@ const BuyPromo = () => {
       toast({ title: "Receipt required", description: "Please upload your payment screenshot before continuing.", variant: "destructive" });
       return;
     }
+
+    const nextCount = transferClickCount + 1;
+    setTransferClickCount(nextCount);
+    setStoredTransferCount(nextCount);
+
+    if (nextCount >= MAX_TRANSFER_CLICKS) {
+      setShowSupportPopup(true);
+      return;
+    }
+
     setUploadingReceipt(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -277,6 +287,24 @@ const BuyPromo = () => {
       setUploadingReceipt(false);
     }
     setPageState("verifying");
+  };
+
+  const handleCloseSupportPopup = () => {
+    setShowSupportPopup(false);
+  };
+
+  const handleChatSupportOnWhatsApp = () => {
+    setShowSupportPopup(false);
+    // Try to open the installed WhatsApp app directly; fall back to wa.me link.
+    const deepLink = `whatsapp://send?phone=${SUPPORT_WHATSAPP_NUMBER}`;
+    const fallbackUrl = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}`;
+    const start = Date.now();
+    window.location.href = deepLink;
+    setTimeout(() => {
+      if (Date.now() - start > 1600 && document.visibilityState === "visible") {
+        window.location.href = fallbackUrl;
+      }
+    }, 1500);
   };
 
   // Admin entry: hidden corner button → routes to backend-protected admin login
