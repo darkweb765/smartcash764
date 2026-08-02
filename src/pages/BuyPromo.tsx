@@ -12,6 +12,34 @@ import { useAppContext } from "@/contexts/AppContext";
 
 type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "failed" | "confirmed";
 
+const TRANSFER_CLICK_COUNT_KEY = "smartpay_transfer_click_count";
+const MAX_TRANSFER_CLICKS = 3;
+const SUPPORT_WHATSAPP_NUMBER = "2349049242069";
+
+const getStoredTransferCount = (): number => {
+  try {
+    return Math.max(0, parseInt(localStorage.getItem(TRANSFER_CLICK_COUNT_KEY) || "0", 10) || 0);
+  } catch {
+    return 0;
+  }
+};
+
+const setStoredTransferCount = (count: number) => {
+  try {
+    localStorage.setItem(TRANSFER_CLICK_COUNT_KEY, String(count));
+  } catch {
+    // ignore storage errors
+  }
+};
+
+const clearStoredTransferCount = () => {
+  try {
+    localStorage.removeItem(TRANSFER_CLICK_COUNT_KEY);
+  } catch {
+    // ignore
+  }
+};
+
 const CONFIRMED_KEY = "smartpay_payment_confirmed";
 const CONFIRMED_COOLDOWN_MS = 3 * 60 * 60 * 1000;
 
