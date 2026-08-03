@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePaymentAccount } from "@/hooks/usePaymentAccount";
+import { useSupportNumber } from "@/hooks/useSupportNumber";
 
 
 import { useAppContext } from "@/contexts/AppContext";
@@ -16,7 +17,6 @@ const TRANSFER_CLICK_COUNT_KEY = "smartpay_transfer_click_count";
 const MAX_TRANSFER_CLICKS = 3;
 // After this window the click counter resets so the user can verify again
 const TRANSFER_CLICK_RESET_MS = 2 * 60 * 60 * 1000;
-const SUPPORT_WHATSAPP_NUMBER = "2349049242069";
 
 const getStoredTransferCount = (): number => {
   try {
@@ -82,6 +82,7 @@ const VERIFY_MESSAGES = [
 ];
 
 const BuyPromo = () => {
+  const SUPPORT_WHATSAPP_NUMBER = useSupportNumber();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { addNotification } = useAppContext();

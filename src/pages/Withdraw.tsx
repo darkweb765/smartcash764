@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSupportNumber } from "@/hooks/useSupportNumber";
 
 const nigerianBanks = [
   "Select Bank",
@@ -25,6 +26,7 @@ const nigerianBanks = [
 type WithdrawStatus = "form" | "pending" | "success";
 
 const Withdraw = () => {
+  const supportNumber = useSupportNumber();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { balance, deductBalance, addNotification } = useAppContext();
@@ -378,7 +380,7 @@ const Withdraw = () => {
               </Button>
               <Button onClick={() => {
                   setShowActivationDialog(false);
-                  const phone = "2349049242069";
+                  const phone = supportNumber;
                   // Open WhatsApp chat directly with no pre-filled message.
                   const appUrl = `whatsapp://send?phone=${phone}`;
                   const fallbackUrl = `https://wa.me/${phone}`;
