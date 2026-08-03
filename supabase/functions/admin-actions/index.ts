@@ -728,7 +728,25 @@ Deno.serve(async (req) => {
         return json({ success: true });
       }
 
+      if (body.action === "update_support_number") {
+        const raw = typeof body.support_whatsapp === "string" ? body.support_whatsapp.replace(/[^0-9]/g, "") : "";
+        if (raw.length < 10 || raw.length > 15) return json({ error: "Enter a valid WhatsApp number" }, 400);
+        const { data: existing } = await supabase
+          .from("app_settings").select("id").eq("singleton", true).maybeSingle();
+        if (existing) {
+          const { error } = await supabase
+            .from("app_settings").update({ support_whatsapp: raw }).eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("app_settings").insert({ singleton: true, support_whatsapp: raw });
+          if (error) throw error;
+        }
+        return json({ success: true, support_whatsapp: raw });
+      }
+
       if (body.action === "create_master_code") {
+
 
         let code = "";
         let attempts = 0;
