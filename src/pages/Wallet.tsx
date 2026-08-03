@@ -14,8 +14,8 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const BONUS_WITHDRAWN_KEY = "smartpay_bonus_withdrawn";
 const CONGRATS_SEEN_KEY = "smartpay_wallet_congrats_seen";
+
 
 // Deterministic 10-digit account number derived from the user id so each user
 // gets a stable, realistic-looking account they can copy.
