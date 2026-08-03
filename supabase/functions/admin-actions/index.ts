@@ -356,6 +356,11 @@ Deno.serve(async (req) => {
         .from("promo_purchases").select("*").order("created_at", { ascending: false });
       const { data: profiles } = await supabase
         .from("profiles").select("user_id, username, created_at");
+      const { data: appStates } = await supabase
+        .from("user_app_state").select("user_id, wallet_unlocked");
+      const walletUnlockedById: Record<string, boolean> = {};
+      for (const s of (appStates || [])) walletUnlockedById[s.user_id] = !!s.wallet_unlocked;
+
 
       // Fetch auth users (for email + created_at fallback)
       const emailById: Record<string, string> = {};
