@@ -215,7 +215,7 @@ const Wallet = () => {
             <div>
               <p className="text-yellow-800 text-sm font-semibold">Deposit Locked</p>
               <p className="text-yellow-700 text-xs mt-1">
-                To deposit money into your wallet, you must first withdraw all your bonus and purchase a Promo Code. This is required to verify your account.
+                Your wallet is locked. Only our admin team can unlock it for your account. Please withdraw your bonus and purchase a Promo Code, then contact support to have your wallet unlocked.
               </p>
             </div>
           </div>
