@@ -261,7 +261,7 @@ const Wallet = () => {
             </div>
             <DialogTitle className="text-lg font-bold">Deposit Not Available</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground mt-2">
-              You need to withdraw your bonus balance and purchase a Promo Code before you can deposit money into your wallet.
+              Your wallet has not been unlocked yet. Only the admin can unlock it. Withdraw your bonus balance and purchase a Promo Code, then the admin will unlock your wallet.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 mt-2">
