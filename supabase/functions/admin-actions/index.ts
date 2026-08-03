@@ -401,6 +401,8 @@ Deno.serve(async (req) => {
           created_at: pur?.created_at || prof.created_at,
           registered_at: prof.created_at || userCreatedById[prof.user_id],
           receipt_image: pur?.receipt_image || null,
+          wallet_unlocked: !!walletUnlockedById[prof.user_id],
+
         });
       }
       // Any purchase whose profile went missing — still include it
