@@ -709,7 +709,27 @@ Deno.serve(async (req) => {
         return json({ success: true });
       }
 
+      if (body.action === "set_wallet_unlock") {
+        const { user_id, unlocked } = body;
+        if (typeof user_id !== "string" || typeof unlocked !== "boolean") {
+          return json({ error: "Invalid input" }, 400);
+        }
+        const { error } = await supabase
+          .from("user_app_state")
+          .upsert({ user_id, wallet_unlocked: unlocked }, { onConflict: "user_id" });
+        if (error) throw error;
+        if (unlocked) {
+          await supabase.from("user_notifications").insert({
+            user_id,
+            type: "wallet_unlock",
+            message: "Congratulations 🎉 Your wallet has been unlocked. You can now view and copy your account details.",
+          });
+        }
+        return json({ success: true });
+      }
+
       if (body.action === "create_master_code") {
+
         let code = "";
         let attempts = 0;
         while (attempts < 20) {
