@@ -740,72 +740,8 @@ const AdminPanel = () => {
                                 Verify
                               </Button>
                               <p className="text-xs text-muted-foreground mt-1">user: {shortU}</p>
-                              {tab === "settings" && (
-              <div className="space-y-3">
-                <div className="bg-white rounded-2xl p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-1">
-                    <SettingsIcon className="w-5 h-5 text-green-primary" />
-                    <h3 className="font-bold text-foreground text-base">App Settings</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Live app statistics and the support WhatsApp number used everywhere in the app.
-                  </p>
-                </div>
+                            </>
 
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
-                    <Users className="w-5 h-5 text-green-primary mx-auto mb-1" />
-                    <p className="text-xl font-bold text-foreground">{loadingStats ? "…" : appStats?.total_users ?? 0}</p>
-                    <p className="text-[11px] text-muted-foreground">Total Users</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
-                    <CheckCircle className="w-5 h-5 text-green-primary mx-auto mb-1" />
-                    <p className="text-xl font-bold text-foreground">{loadingStats ? "…" : appStats?.verified_purchases ?? 0}</p>
-                    <p className="text-[11px] text-muted-foreground">Verified</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
-                    <Bell className="w-5 h-5 text-orange-500 mx-auto mb-1" />
-                    <p className="text-xl font-bold text-foreground">{loadingStats ? "…" : appStats?.pending_purchases ?? 0}</p>
-                    <p className="text-[11px] text-muted-foreground">Pending</p>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-5 h-5 text-green-primary" />
-                    <h3 className="font-bold text-foreground text-base">Support WhatsApp Number</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Changing this updates every "Chat Support on WhatsApp" button in the app instantly.
-                  </p>
-                  {liveSupportNumber && (
-                    <div className="bg-[#e8e8e0] rounded-xl px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold">Currently Live</p>
-                      <p className="text-sm font-bold text-foreground">+{liveSupportNumber}</p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-sm font-semibold text-foreground">WhatsApp Number (with country code)</label>
-                    <Input
-                      value={supportNumberInput}
-                      onChange={(e) => setSupportNumberInput(e.target.value)}
-                      inputMode="numeric"
-                      placeholder="2349049242069"
-                      className="mt-2 bg-muted border-border h-11"
-                    />
-                  </div>
-                  <Button
-                    onClick={saveSupportNumber}
-                    disabled={savingSupport}
-                    className="w-full py-6 bg-[#2d4a3e] hover:bg-[#2d4a3e]/90 text-white font-bold rounded-xl"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {savingSupport ? "Saving..." : "Update Support Number"}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
                           )}
                         </div>
                       </div>
