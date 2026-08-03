@@ -18,6 +18,8 @@ interface Purchase {
   status: string;
   created_at: string;
   receipt_image?: string | null;
+  wallet_unlocked?: boolean;
+
 }
 
 interface AlertItem {
