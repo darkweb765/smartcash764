@@ -32,13 +32,17 @@ export const useSupportNumber = () => {
       try { localStorage.setItem(CACHE_KEY, v); } catch {}
     };
 
-    supabase
-      .from("app_settings")
-      .select("support_whatsapp")
-      .eq("singleton", true)
-      .maybeSingle()
-      .then(({ data }) => apply(data?.support_whatsapp))
-      .catch(() => {});
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("app_settings")
+          .select("support_whatsapp")
+          .eq("singleton", true)
+          .maybeSingle();
+        apply(data?.support_whatsapp);
+      } catch {}
+    })();
+
 
     const channel = supabase
       .channel("app-settings-support-number")
