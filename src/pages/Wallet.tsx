@@ -36,13 +36,24 @@ const Wallet = () => {
   const { balance } = useAppContext();
   const [showDepositDialog, setShowDepositDialog] = useState(false);
   const [showCongratsDialog, setShowCongratsDialog] = useState(false);
-  const [bonusWithdrawn, setBonusWithdrawn] = useState<boolean>(() => {
-    try { return localStorage.getItem(BONUS_WITHDRAWN_KEY) === "true"; } catch { return false; }
-  });
+  const [bonusWithdrawn, setBonusWithdrawn] = useState<boolean>(false);
   const [accountName, setAccountName] = useState<string>("SmartPay User");
   const [userId, setUserId] = useState<string>("");
 
+  const applyUnlock = (unlocked: boolean) => {
+    setBonusWithdrawn(unlocked);
+    if (unlocked) {
+      try {
+        if (localStorage.getItem(CONGRATS_SEEN_KEY) !== "true") {
+          setShowCongratsDialog(true);
+          localStorage.setItem(CONGRATS_SEEN_KEY, "true");
+        }
+      } catch {}
+    }
+  };
+
   useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -53,25 +64,27 @@ const Wallet = () => {
         .eq("user_id", user.id)
         .maybeSingle();
       if (data?.username) setAccountName(String(data.username).toUpperCase());
+
+      const { data: state } = await supabase
+        .from("user_app_state")
+        .select("wallet_unlocked")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      applyUnlock(!!state?.wallet_unlocked);
+
+      // Realtime: admin unlocking the wallet reflects instantly
+      channel = supabase
+        .channel(`wallet-unlock-${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "user_app_state", filter: `user_id=eq.${user.id}` },
+          (payload: any) => applyUnlock(!!payload.new?.wallet_unlocked)
+        )
+        .subscribe();
     })();
+    return () => { if (channel) supabase.removeChannel(channel); };
   }, []);
 
-  // Detect unlock and show one-time congrats popup
-  useEffect(() => {
-    const check = () => {
-      try {
-        const flag = localStorage.getItem(BONUS_WITHDRAWN_KEY) === "true";
-        setBonusWithdrawn(flag);
-        if (flag && localStorage.getItem(CONGRATS_SEEN_KEY) !== "true") {
-          setShowCongratsDialog(true);
-          localStorage.setItem(CONGRATS_SEEN_KEY, "true");
-        }
-      } catch {}
-    };
-    check();
-    window.addEventListener("focus", check);
-    return () => window.removeEventListener("focus", check);
-  }, []);
 
   const moniepointAccount = useMemo(
     () => (userId ? deriveAccount(userId, "moniepoint") : "•••••••••"),
