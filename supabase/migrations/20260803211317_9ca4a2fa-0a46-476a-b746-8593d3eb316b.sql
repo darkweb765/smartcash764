@@ -1,0 +1,1 @@
+ALTER TABLE public.user_app_state ADD COLUMN IF NOT EXISTS wallet_unlocked boolean NOT NULL DEFAULT false;
