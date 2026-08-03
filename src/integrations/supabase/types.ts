@@ -133,6 +133,30 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          created_at: string
+          id: string
+          singleton: boolean
+          support_whatsapp: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          singleton?: boolean
+          support_whatsapp?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          singleton?: boolean
+          support_whatsapp?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string

@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Copy, Send, Search, RefreshCw, Shield, Users, Bell, MessageCircle, FileText, X, Wallet, Save, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, CheckCircle, Copy, Send, Search, RefreshCw, Shield, Users, Bell, MessageCircle, FileText, X, Wallet, Save, Image as ImageIcon, Settings as SettingsIcon, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type Tab = "users" | "alerts" | "livechat" | "reports" | "account";
+type Tab = "users" | "alerts" | "livechat" | "reports" | "account" | "settings";
 
 interface Purchase {
   id: string;
@@ -348,7 +348,50 @@ const AdminPanel = () => {
     { key: "livechat", label: "Live Chat", icon: MessageCircle },
     { key: "reports", label: "Reports", icon: FileText },
     { key: "account", label: "Account", icon: Wallet },
+    { key: "settings", label: "Settings", icon: SettingsIcon },
   ];
+
+  // Settings tab state
+  const [appStats, setAppStats] = useState<{ total_users: number; verified_purchases: number; pending_purchases: number } | null>(null);
+  const [supportNumberInput, setSupportNumberInput] = useState("");
+  const [liveSupportNumber, setLiveSupportNumber] = useState("");
+  const [savingSupport, setSavingSupport] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  const loadSettings = async () => {
+    setLoadingStats(true);
+    const data = await callAdmin("GET", "app_stats");
+    setLoadingStats(false);
+    if (data && typeof data.total_users === "number") {
+      setAppStats({
+        total_users: data.total_users,
+        verified_purchases: data.verified_purchases || 0,
+        pending_purchases: data.pending_purchases || 0,
+      });
+      setLiveSupportNumber(data.support_whatsapp || "");
+      setSupportNumberInput(data.support_whatsapp || "");
+    }
+  };
+
+  useEffect(() => { if (tab === "settings") loadSettings(); }, [tab]);
+
+  const saveSupportNumber = async () => {
+    const digits = supportNumberInput.replace(/[^0-9]/g, "");
+    if (digits.length < 10) {
+      toast({ title: "Enter a valid WhatsApp number", description: "Use the full number with country code, e.g. 2349049242069", variant: "destructive" });
+      return;
+    }
+    setSavingSupport(true);
+    const res = await callAdmin("POST", "", { action: "update_support_number", support_whatsapp: digits });
+    setSavingSupport(false);
+    if (res?.success) {
+      setLiveSupportNumber(res.support_whatsapp);
+      setSupportNumberInput(res.support_whatsapp);
+      toast({ title: "Support number updated", description: "All WhatsApp support links in the app now use this number." });
+    } else {
+      toast({ title: res?.error || "Failed to update number", variant: "destructive" });
+    }
+  };
 
   // Account settings state
   const [acctNumber, setAcctNumber] = useState("");
@@ -698,6 +741,7 @@ const AdminPanel = () => {
                               </Button>
                               <p className="text-xs text-muted-foreground mt-1">user: {shortU}</p>
                             </>
+
                           )}
                         </div>
                       </div>
@@ -984,6 +1028,74 @@ const AdminPanel = () => {
                 )}
               </div>
             )}
+
+            {/* SETTINGS TAB */}
+            {tab === "settings" && (
+              <div className="space-y-3">
+                <div className="bg-white rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    <SettingsIcon className="w-5 h-5 text-green-primary" />
+                    <h3 className="font-bold text-foreground text-base">App Settings</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Live app statistics and the support WhatsApp number used everywhere in the app.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
+                    <Users className="w-5 h-5 text-green-primary mx-auto mb-1" />
+                    <p className="text-xl font-bold text-foreground">{loadingStats ? "…" : appStats?.total_users ?? 0}</p>
+                    <p className="text-[11px] text-muted-foreground">Total Users</p>
+                  </div>
+                  <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
+                    <CheckCircle className="w-5 h-5 text-green-primary mx-auto mb-1" />
+                    <p className="text-xl font-bold text-foreground">{loadingStats ? "…" : appStats?.verified_purchases ?? 0}</p>
+                    <p className="text-[11px] text-muted-foreground">Verified</p>
+                  </div>
+                  <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
+                    <Bell className="w-5 h-5 text-orange-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-foreground">{loadingStats ? "…" : appStats?.pending_purchases ?? 0}</p>
+                    <p className="text-[11px] text-muted-foreground">Pending</p>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-5 h-5 text-green-primary" />
+                    <h3 className="font-bold text-foreground text-base">Support WhatsApp Number</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Changing this updates every Chat Support on WhatsApp button in the app instantly.
+                  </p>
+                  {liveSupportNumber && (
+                    <div className="bg-[#e8e8e0] rounded-xl px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold">Currently Live</p>
+                      <p className="text-sm font-bold text-foreground">+{liveSupportNumber}</p>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-sm font-semibold text-foreground">WhatsApp Number (with country code)</label>
+                    <Input
+                      value={supportNumberInput}
+                      onChange={(e) => setSupportNumberInput(e.target.value)}
+                      inputMode="numeric"
+                      placeholder="2349049242069"
+                      className="mt-2 bg-muted border-border h-11"
+                    />
+                  </div>
+                  <Button
+                    onClick={saveSupportNumber}
+                    disabled={savingSupport}
+                    className="w-full py-6 bg-[#2d4a3e] hover:bg-[#2d4a3e]/90 text-white font-bold rounded-xl"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {savingSupport ? "Saving..." : "Update Support Number"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
           </>
         )}
       </div>

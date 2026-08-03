@@ -728,7 +728,25 @@ Deno.serve(async (req) => {
         return json({ success: true });
       }
 
+      if (body.action === "update_support_number") {
+        const raw = typeof body.support_whatsapp === "string" ? body.support_whatsapp.replace(/[^0-9]/g, "") : "";
+        if (raw.length < 10 || raw.length > 15) return json({ error: "Enter a valid WhatsApp number" }, 400);
+        const { data: existing } = await supabase
+          .from("app_settings").select("id").eq("singleton", true).maybeSingle();
+        if (existing) {
+          const { error } = await supabase
+            .from("app_settings").update({ support_whatsapp: raw }).eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("app_settings").insert({ singleton: true, support_whatsapp: raw });
+          if (error) throw error;
+        }
+        return json({ success: true, support_whatsapp: raw });
+      }
+
       if (body.action === "create_master_code") {
+
 
         let code = "";
         let attempts = 0;
@@ -746,7 +764,34 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (req.method === "GET" && action === "app_stats") {
+      // Real registered user count from auth
+      let totalUsers = 0;
+      let page = 1;
+      while (page < 100) {
+        const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+        if (error) break;
+        const batch = data?.users?.length || 0;
+        totalUsers += batch;
+        if (batch < 1000) break;
+        page++;
+      }
+      const { count: purchaseCount } = await supabase
+        .from("promo_purchases").select("id", { count: "exact", head: true }).eq("status", "verified");
+      const { count: pendingCount } = await supabase
+        .from("promo_purchases").select("id", { count: "exact", head: true }).eq("status", "pending");
+      const { data: settings } = await supabase
+        .from("app_settings").select("support_whatsapp").eq("singleton", true).maybeSingle();
+      return json({
+        total_users: totalUsers,
+        verified_purchases: purchaseCount || 0,
+        pending_purchases: pendingCount || 0,
+        support_whatsapp: settings?.support_whatsapp || "",
+      });
+    }
+
     if (req.method === "GET" && action === "list_master_codes") {
+
       const { data, error } = await supabase
         .from("admin_master_codes")
         .select("*")
