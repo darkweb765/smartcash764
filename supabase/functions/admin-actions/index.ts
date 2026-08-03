@@ -415,6 +415,8 @@ Deno.serve(async (req) => {
           status: p.status, created_at: p.created_at,
           registered_at: userCreatedById[p.user_id] || p.created_at,
           receipt_image: p.receipt_image || null,
+          wallet_unlocked: !!walletUnlockedById[p.user_id],
+
         });
       }
 
