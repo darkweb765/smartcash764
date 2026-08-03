@@ -232,6 +232,15 @@ const AdminPanel = () => {
     }
   };
 
+  const handleWalletUnlock = async (userId: string, unlocked: boolean) => {
+    const res = await callAdmin("POST", "", { action: "set_wallet_unlock", user_id: userId, unlocked });
+    if (res.success) {
+      setSuccessMsg(unlocked ? "Wallet Unlocked 🔓" : "Wallet Locked 🔒");
+      fetchData();
+    }
+  };
+
+
   const handleActivate = async (id: string) => {
     const res = await callAdmin("POST", "", { action: "activate_code", code_id: id });
     if (res.success) {
