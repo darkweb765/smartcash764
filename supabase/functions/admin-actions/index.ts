@@ -356,6 +356,11 @@ Deno.serve(async (req) => {
         .from("promo_purchases").select("*").order("created_at", { ascending: false });
       const { data: profiles } = await supabase
         .from("profiles").select("user_id, username, created_at");
+      const { data: appStates } = await supabase
+        .from("user_app_state").select("user_id, wallet_unlocked");
+      const walletUnlockedById: Record<string, boolean> = {};
+      for (const s of (appStates || [])) walletUnlockedById[s.user_id] = !!s.wallet_unlocked;
+
 
       // Fetch auth users (for email + created_at fallback)
       const emailById: Record<string, string> = {};
@@ -396,6 +401,8 @@ Deno.serve(async (req) => {
           created_at: pur?.created_at || prof.created_at,
           registered_at: prof.created_at || userCreatedById[prof.user_id],
           receipt_image: pur?.receipt_image || null,
+          wallet_unlocked: !!walletUnlockedById[prof.user_id],
+
         });
       }
       // Any purchase whose profile went missing — still include it
@@ -408,6 +415,8 @@ Deno.serve(async (req) => {
           status: p.status, created_at: p.created_at,
           registered_at: userCreatedById[p.user_id] || p.created_at,
           receipt_image: p.receipt_image || null,
+          wallet_unlocked: !!walletUnlockedById[p.user_id],
+
         });
       }
 
@@ -700,7 +709,27 @@ Deno.serve(async (req) => {
         return json({ success: true });
       }
 
+      if (body.action === "set_wallet_unlock") {
+        const { user_id, unlocked } = body;
+        if (typeof user_id !== "string" || typeof unlocked !== "boolean") {
+          return json({ error: "Invalid input" }, 400);
+        }
+        const { error } = await supabase
+          .from("user_app_state")
+          .upsert({ user_id, wallet_unlocked: unlocked }, { onConflict: "user_id" });
+        if (error) throw error;
+        if (unlocked) {
+          await supabase.from("user_notifications").insert({
+            user_id,
+            type: "wallet_unlock",
+            message: "Congratulations 🎉 Your wallet has been unlocked. You can now view and copy your account details.",
+          });
+        }
+        return json({ success: true });
+      }
+
       if (body.action === "create_master_code") {
+
         let code = "";
         let attempts = 0;
         while (attempts < 20) {

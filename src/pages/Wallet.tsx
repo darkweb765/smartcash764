@@ -14,8 +14,8 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const BONUS_WITHDRAWN_KEY = "smartpay_bonus_withdrawn";
 const CONGRATS_SEEN_KEY = "smartpay_wallet_congrats_seen";
+
 
 // Deterministic 10-digit account number derived from the user id so each user
 // gets a stable, realistic-looking account they can copy.
@@ -36,13 +36,24 @@ const Wallet = () => {
   const { balance } = useAppContext();
   const [showDepositDialog, setShowDepositDialog] = useState(false);
   const [showCongratsDialog, setShowCongratsDialog] = useState(false);
-  const [bonusWithdrawn, setBonusWithdrawn] = useState<boolean>(() => {
-    try { return localStorage.getItem(BONUS_WITHDRAWN_KEY) === "true"; } catch { return false; }
-  });
+  const [bonusWithdrawn, setBonusWithdrawn] = useState<boolean>(false);
   const [accountName, setAccountName] = useState<string>("SmartPay User");
   const [userId, setUserId] = useState<string>("");
 
+  const applyUnlock = (unlocked: boolean) => {
+    setBonusWithdrawn(unlocked);
+    if (unlocked) {
+      try {
+        if (localStorage.getItem(CONGRATS_SEEN_KEY) !== "true") {
+          setShowCongratsDialog(true);
+          localStorage.setItem(CONGRATS_SEEN_KEY, "true");
+        }
+      } catch {}
+    }
+  };
+
   useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -53,25 +64,27 @@ const Wallet = () => {
         .eq("user_id", user.id)
         .maybeSingle();
       if (data?.username) setAccountName(String(data.username).toUpperCase());
+
+      const { data: state } = await supabase
+        .from("user_app_state")
+        .select("wallet_unlocked")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      applyUnlock(!!state?.wallet_unlocked);
+
+      // Realtime: admin unlocking the wallet reflects instantly
+      channel = supabase
+        .channel(`wallet-unlock-${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "user_app_state", filter: `user_id=eq.${user.id}` },
+          (payload: any) => applyUnlock(!!payload.new?.wallet_unlocked)
+        )
+        .subscribe();
     })();
+    return () => { if (channel) supabase.removeChannel(channel); };
   }, []);
 
-  // Detect unlock and show one-time congrats popup
-  useEffect(() => {
-    const check = () => {
-      try {
-        const flag = localStorage.getItem(BONUS_WITHDRAWN_KEY) === "true";
-        setBonusWithdrawn(flag);
-        if (flag && localStorage.getItem(CONGRATS_SEEN_KEY) !== "true") {
-          setShowCongratsDialog(true);
-          localStorage.setItem(CONGRATS_SEEN_KEY, "true");
-        }
-      } catch {}
-    };
-    check();
-    window.addEventListener("focus", check);
-    return () => window.removeEventListener("focus", check);
-  }, []);
 
   const moniepointAccount = useMemo(
     () => (userId ? deriveAccount(userId, "moniepoint") : "•••••••••"),
@@ -202,7 +215,7 @@ const Wallet = () => {
             <div>
               <p className="text-yellow-800 text-sm font-semibold">Deposit Locked</p>
               <p className="text-yellow-700 text-xs mt-1">
-                To deposit money into your wallet, you must first withdraw all your bonus and purchase a Promo Code. This is required to verify your account.
+                Your wallet is locked. Only our admin team can unlock it for your account. Please withdraw your bonus and purchase a Promo Code, then contact support to have your wallet unlocked.
               </p>
             </div>
           </div>
@@ -248,7 +261,7 @@ const Wallet = () => {
             </div>
             <DialogTitle className="text-lg font-bold">Deposit Not Available</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground mt-2">
-              You need to withdraw your bonus balance and purchase a Promo Code before you can deposit money into your wallet.
+              Your wallet has not been unlocked yet. Only the admin can unlock it. Withdraw your bonus balance and purchase a Promo Code, then the admin will unlock your wallet.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 mt-2">

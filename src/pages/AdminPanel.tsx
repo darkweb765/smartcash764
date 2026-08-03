@@ -18,6 +18,8 @@ interface Purchase {
   status: string;
   created_at: string;
   receipt_image?: string | null;
+  wallet_unlocked?: boolean;
+
 }
 
 interface AlertItem {
@@ -229,6 +231,15 @@ const AdminPanel = () => {
       fetchData();
     }
   };
+
+  const handleWalletUnlock = async (userId: string, unlocked: boolean) => {
+    const res = await callAdmin("POST", "", { action: "set_wallet_unlock", user_id: userId, unlocked });
+    if (res.success) {
+      setSuccessMsg(unlocked ? "Wallet Unlocked 🔓" : "Wallet Locked 🔒");
+      fetchData();
+    }
+  };
+
 
   const handleActivate = async (id: string) => {
     const res = await callAdmin("POST", "", { action: "activate_code", code_id: id });
@@ -703,6 +714,24 @@ const AdminPanel = () => {
                       </button>
                     </div>
                   )}
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#eeeee8]">
+                    <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <Wallet className="w-3.5 h-3.5" />
+                      Wallet {p.wallet_unlocked ? "Unlocked 🔓" : "Locked 🔒"}
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={() => handleWalletUnlock(p.user_id, !p.wallet_unlocked)}
+                      className={`rounded-lg px-4 py-1.5 text-xs font-semibold ${
+                        p.wallet_unlocked
+                          ? "bg-red-50 text-red-600 hover:bg-red-100"
+                          : "bg-green-primary hover:bg-green-primary/90 text-white"
+                      }`}
+                    >
+                      {p.wallet_unlocked ? "Lock Wallet" : "Unlock Wallet 🔓"}
+                    </Button>
+                  </div>
+
                 </div>
                 );
               })
