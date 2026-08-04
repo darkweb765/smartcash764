@@ -655,6 +655,78 @@ Deno.serve(async (req) => {
       return json(enriched);
     }
 
+    // ---------- SCHEDULED TRANSFER PROCESSOR (cron) ----------
+    if (action === "process_scheduled_transfers") {
+      const { data: due } = await supabase
+        .from("scheduled_transfers")
+        .select("*")
+        .eq("status", "scheduled")
+        .lte("deliver_at", new Date().toISOString())
+        .limit(50);
+      let delivered = 0;
+      for (const t of (due || [])) {
+        try { await deliverTransfer(supabase, t); delivered++; } catch (_) {}
+      }
+      return json({ success: true, delivered });
+    }
+
+    // ---------- ADMIN: FULL USER REPORT ----------
+    if (req.method === "GET" && action === "user_report") {
+      const email = (url.searchParams.get("email") || "").trim();
+      if (!isEmail(email)) return json({ error: "Enter a valid email address" }, 400);
+
+      const authUser = await findUserByEmail(supabase, email);
+      let userId = authUser?.id as string | undefined;
+      if (!userId) {
+        const { data: pp } = await supabase
+          .from("promo_purchases").select("user_id").ilike("email", email).limit(1);
+        userId = pp?.[0]?.user_id;
+      }
+      if (!userId) return json({ error: "No user found with that email" }, 404);
+
+      const [profileRes, stateRes, purchasesRes, codesRes, withdrawalsRes, chatRes, ticketsRes, notifRes] =
+        await Promise.all([
+          supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+          supabase.from("user_app_state").select("*").eq("user_id", userId).maybeSingle(),
+          supabase.from("promo_purchases").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+          supabase.from("promo_codes").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+          supabase.from("withdrawal_requests").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+          supabase.from("chat_messages").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+          supabase.from("support_tickets").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+          supabase.from("user_notifications").select("type, message, amount, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
+        ]);
+
+      const notifications = notifRes.data || [];
+      const serviceAttempts = notifications.filter((n: any) =>
+        /data|airtime|electricity|cable|betting|internet|gift ?card/i.test(String(n.message || ""))
+      );
+      const messages = chatRes.data || [];
+
+      return json({
+        user_id: userId,
+        email: authUser?.email || email,
+        username: profileRes.data?.username || purchasesRes.data?.[0]?.username || "User",
+        full_name: purchasesRes.data?.[0]?.full_name || null,
+        avatar_url: profileRes.data?.avatar_url || null,
+        registered_at: authUser?.created_at || profileRes.data?.created_at || null,
+        last_sign_in_at: authUser?.last_sign_in_at || null,
+        balance: Number(stateRes.data?.balance || 0),
+        gift_claimed: !!stateRes.data?.gift_claimed,
+        wallet_unlocked: !!stateRes.data?.wallet_unlocked,
+        purchases: purchasesRes.data || [],
+        codes: codesRes.data || [],
+        withdrawals: withdrawalsRes.data || [],
+        chat_count: messages.length,
+        last_message: messages[0] || null,
+        user_messages: messages.filter((m: any) => m.sender_type === "user").length,
+        tickets: ticketsRes.data || [],
+        service_attempts: serviceAttempts,
+        recent_notifications: notifications.slice(0, 10),
+      });
+    }
+
+
+
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
 
