@@ -969,7 +969,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (req.method === "GET" && action === "scheduled_transfers") {
+      const { data, error } = await supabase
+        .from("scheduled_transfers")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return json(data || []);
+    }
+
     if (req.method === "GET" && action === "app_stats") {
+
       // Real registered user count from auth
       let totalUsers = 0;
       let page = 1;
