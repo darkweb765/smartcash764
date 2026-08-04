@@ -3,11 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface Notification {
   id: string;
-  type: "claim" | "withdrawal_success" | "withdrawal_pending" | "withdrawal_activate" | "promo_purchased" | "promo_activated";
+  type:
+    | "claim"
+    | "withdrawal_success"
+    | "withdrawal_pending"
+    | "withdrawal_activate"
+    | "promo_purchased"
+    | "promo_activated"
+    | "wallet_unlock"
+    | "bank_credit"
+    | "bank_debit";
   message: string;
   amount?: number;
   timestamp: number;
   read: boolean;
+  meta?: Record<string, any>;
 }
 
 const mapRow = (row: any): Notification => ({
@@ -17,7 +27,9 @@ const mapRow = (row: any): Notification => ({
   amount: row.amount == null ? undefined : Number(row.amount),
   timestamp: new Date(row.created_at).getTime(),
   read: Boolean(row.read),
+  meta: (row.meta || undefined) as Record<string, any> | undefined,
 });
+
 
 export const useNotifications = () => {
   const [userId, setUserId] = useState<string | null>(null);

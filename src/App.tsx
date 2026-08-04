@@ -156,6 +156,8 @@ const App = () => (
         <AppRoutes />
         <SupportReplyPopup />
         <PurchaseSuccessPopup />
+        <BankAlertPopup />
+
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
