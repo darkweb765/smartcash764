@@ -373,7 +373,7 @@ const AdminPanel = () => {
     }
   };
 
-  useEffect(() => { if (tab === "settings") loadSettings(); }, [tab]);
+  useEffect(() => { if (tab === "settings") { loadSettings(); loadScheduled(); } }, [tab]);
 
   const saveSupportNumber = async () => {
     const digits = supportNumberInput.replace(/[^0-9]/g, "");
