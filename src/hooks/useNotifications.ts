@@ -76,7 +76,7 @@ export const useNotifications = () => {
       try {
         const { data, error } = await supabase
           .from("user_notifications")
-          .select("id, type, message, amount, read, created_at")
+          .select("id, type, message, amount, read, created_at, meta")
           .eq("user_id", userId)
           .order("created_at", { ascending: false });
 
@@ -132,7 +132,7 @@ export const useNotifications = () => {
     supabase
       .from("user_notifications")
       .insert({ user_id: userId, type, message, amount: amount ?? null })
-      .select("id, type, message, amount, read, created_at")
+      .select("id, type, message, amount, read, created_at, meta")
       .single()
       .then(({ data, error }) => {
         if (error) {
