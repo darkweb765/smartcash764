@@ -318,6 +318,45 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_transfers: {
+        Row: {
+          amount: number
+          created_at: string
+          deliver_at: string
+          direction: string
+          id: string
+          processed_at: string | null
+          sender_bank: string
+          sender_name: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          deliver_at?: string
+          direction?: string
+          id?: string
+          processed_at?: string | null
+          sender_bank: string
+          sender_name: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          deliver_at?: string
+          direction?: string
+          id?: string
+          processed_at?: string | null
+          sender_bank?: string
+          sender_name?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           created_at: string
@@ -381,6 +420,7 @@ export type Database = {
           created_at: string
           id: string
           message: string
+          meta: Json
           read: boolean
           type: string
           user_id: string
@@ -390,6 +430,7 @@ export type Database = {
           created_at?: string
           id?: string
           message: string
+          meta?: Json
           read?: boolean
           type: string
           user_id: string
@@ -399,6 +440,7 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string
+          meta?: Json
           read?: boolean
           type?: string
           user_id?: string

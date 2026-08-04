@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Gift, CheckCircle, Clock, AlertCircle, Copy, Check, MessageSquare, KeyRound } from "lucide-react";
+import { ArrowLeft, Gift, CheckCircle, Clock, AlertCircle, Copy, Check, MessageSquare, KeyRound, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 
 const Notifications = () => {
@@ -110,7 +110,99 @@ const Notifications = () => {
                 ? notification.message.replace(promoCode, "").replace(/Promo Code:\s*$/, "Promo Code:")
                 : notification.message;
 
+              if (notification.type === "bank_credit" || notification.type === "bank_debit") {
+                const meta = notification.meta || {};
+                const isCredit = notification.type === "bank_credit";
+                const amt = Number(meta.amount ?? notification.amount ?? 0);
+                const money = new Intl.NumberFormat("en-NG", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }).format(amt);
+                const stamp = new Date(notification.timestamp).toLocaleString("en-NG", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                });
+
+                return (
+                  <div
+                    key={notification.id}
+                    onClick={() => markAsRead(notification.id)}
+                    className={`rounded-2xl border overflow-hidden cursor-pointer ${
+                      notification.read ? "bg-card border-border" : "bg-card border-green-primary/40 shadow-sm"
+                    }`}
+                  >
+                    <div
+                      className={`px-4 py-2 flex items-center justify-between ${
+                        isCredit ? "bg-green-primary" : "bg-destructive"
+                      }`}
+                    >
+                      <span className="text-primary-foreground text-[13px] font-bold tracking-wide">
+                        {isCredit ? "CREDIT ALERT" : "DEBIT ALERT"}
+                      </span>
+                      <span className="text-primary-foreground/90 text-[11px]">SmartPay</span>
+                    </div>
+
+                    <div className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            isCredit ? "bg-green-primary/15" : "bg-destructive/15"
+                          }`}
+                        >
+                          {isCredit ? (
+                            <ArrowDownLeft className="w-6 h-6 text-green-primary" />
+                          ) : (
+                            <ArrowUpRight className="w-6 h-6 text-destructive" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-2xl font-extrabold ${isCredit ? "text-green-primary" : "text-destructive"}`}>
+                            NGN {money}
+                          </p>
+                          <p className="text-sm text-foreground mt-0.5">
+                            {isCredit ? "From" : "To"}{" "}
+                            <span className="font-bold uppercase">{meta.sender_name || "SmartPay"}</span>
+                          </p>
+                          {meta.sender_bank && (
+                            <p className="text-[13px] text-muted-foreground">{meta.sender_bank}</p>
+                          )}
+                        </div>
+                        {!notification.read && (
+                          <div className="w-2 h-2 rounded-full bg-green-primary mt-2 flex-shrink-0" />
+                        )}
+                      </div>
+
+                      <div className="mt-3 border-t border-border pt-3 space-y-1.5">
+                        {meta.balance_after != null && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[12px] text-muted-foreground">Available Balance</span>
+                            <span className="text-[12px] font-bold text-foreground">
+                              NGN {new Intl.NumberFormat("en-NG", { minimumFractionDigits: 2 }).format(Number(meta.balance_after))}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[12px] text-muted-foreground">Date</span>
+                          <span className="text-[12px] font-medium text-foreground">{stamp}</span>
+                        </div>
+                        {meta.reference && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[12px] text-muted-foreground">Reference</span>
+                            <span className="text-[12px] font-medium text-foreground">{meta.reference}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
+
                 <div
                   key={notification.id}
                   onClick={() => markAsRead(notification.id)}

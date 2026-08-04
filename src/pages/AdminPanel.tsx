@@ -373,7 +373,7 @@ const AdminPanel = () => {
     }
   };
 
-  useEffect(() => { if (tab === "settings") loadSettings(); }, [tab]);
+  useEffect(() => { if (tab === "settings") { loadSettings(); loadScheduled(); } }, [tab]);
 
   const saveSupportNumber = async () => {
     const digits = supportNumberInput.replace(/[^0-9]/g, "");
@@ -392,6 +392,114 @@ const AdminPanel = () => {
       toast({ title: res?.error || "Failed to update number", variant: "destructive" });
     }
   };
+
+  // ---- Send / debit money state ----
+  const SCHEDULE_OPTIONS = [
+    { label: "Instantly", minutes: 0 },
+    { label: "In 1 minute", minutes: 1 },
+    { label: "In 2 minutes", minutes: 2 },
+    { label: "In 2 hours", minutes: 120 },
+  ];
+  const [moneyEmail, setMoneyEmail] = useState("");
+  const [senderName, setSenderName] = useState("");
+  const [senderBank, setSenderBank] = useState("");
+  const [moneyAmount, setMoneyAmount] = useState("");
+  const [scheduleMinutes, setScheduleMinutes] = useState(0);
+  const [sendingMoney, setSendingMoney] = useState(false);
+
+  const [debitEmail, setDebitEmail] = useState("");
+  const [debitAmount, setDebitAmount] = useState("");
+  const [debitReason, setDebitReason] = useState("");
+  const [debiting, setDebiting] = useState(false);
+
+  const [scheduled, setScheduled] = useState<any[]>([]);
+
+  const loadScheduled = async () => {
+    const data = await callAdmin("GET", "scheduled_transfers");
+    if (Array.isArray(data)) setScheduled(data);
+  };
+
+  const sendMoney = async () => {
+    const amount = Number(String(moneyAmount).replace(/[^0-9.]/g, ""));
+    if (!moneyEmail.trim() || !senderName.trim() || !senderBank.trim() || !amount) {
+      toast({ title: "Fill in all fields", description: "User email, sender name, sender bank and amount are required.", variant: "destructive" });
+      return;
+    }
+    setSendingMoney(true);
+    const res = await callAdmin("POST", "", {
+      action: "send_money",
+      email: moneyEmail.trim(),
+      sender_name: senderName.trim(),
+      sender_bank: senderBank.trim(),
+      amount,
+      delay_minutes: scheduleMinutes,
+    });
+    setSendingMoney(false);
+    if (res?.success) {
+      setSuccessMsg(
+        res.delivered
+          ? `₦${amount.toLocaleString()} sent successfully.\nThe user has received the credit alert.`
+          : `₦${amount.toLocaleString()} scheduled.\nIt will land in the user's account ${SCHEDULE_OPTIONS.find(o => o.minutes === scheduleMinutes)?.label.toLowerCase()}.`
+      );
+      setMoneyAmount("");
+      loadScheduled();
+    } else {
+      toast({ title: res?.error || "Could not send money", variant: "destructive" });
+    }
+  };
+
+  const debitUser = async () => {
+    const amount = Number(String(debitAmount).replace(/[^0-9.]/g, ""));
+    if (!debitEmail.trim() || !amount) {
+      toast({ title: "Enter user email and amount", variant: "destructive" });
+      return;
+    }
+    setDebiting(true);
+    const res = await callAdmin("POST", "", {
+      action: "debit_user",
+      email: debitEmail.trim(),
+      amount,
+      sender_name: debitReason.trim() || "SmartPay",
+      sender_bank: "SmartPay",
+      delay_minutes: 0,
+    });
+    setDebiting(false);
+    if (res?.success) {
+      setSuccessMsg(`₦${amount.toLocaleString()} debited.\nNew balance: ₦${Number(res.balance || 0).toLocaleString()}`);
+      setDebitAmount("");
+    } else {
+      toast({ title: res?.error || "Could not debit user", variant: "destructive" });
+    }
+  };
+
+  const cancelScheduled = async (id: string) => {
+    const res = await callAdmin("POST", "", { action: "cancel_scheduled_transfer", id });
+    if (res?.success) loadScheduled();
+  };
+
+  // ---- User information report ----
+  const [reportEmail, setReportEmail] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+  const [report, setReport] = useState<any | null>(null);
+
+  const generateReport = async () => {
+    const email = reportEmail.trim();
+    if (!email) {
+      toast({ title: "Enter the user's email", variant: "destructive" });
+      return;
+    }
+    setReportLoading(true);
+    setReport(null);
+    const started = Date.now();
+    const data = await callAdmin("GET", "user_report", undefined, `&email=${encodeURIComponent(email)}`);
+    const elapsed = Date.now() - started;
+    if (elapsed < 1200) await new Promise((r) => setTimeout(r, 1200 - elapsed));
+    setReportLoading(false);
+    if (data && data.user_id) setReport(data);
+    else toast({ title: data?.error || "No user found with that email", variant: "destructive" });
+  };
+
+
 
   // Account settings state
   const [acctNumber, setAcctNumber] = useState("");
@@ -1093,7 +1201,208 @@ const AdminPanel = () => {
                     {savingSupport ? "Saving..." : "Update Support Number"}
                   </Button>
                 </div>
+
+                {/* SEND MONEY */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Send className="w-5 h-5 text-green-primary" />
+                    <h3 className="font-bold text-foreground text-base">Send Money to a User</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Credit any user's dashboard. They receive a real bank-style alert instantly.
+                  </p>
+
+                  <div>
+                    <label className="text-sm font-semibold text-foreground">User Email</label>
+                    <Input value={moneyEmail} onChange={(e) => setMoneyEmail(e.target.value)} type="email" placeholder="user@email.com" className="mt-1.5 bg-muted border-border h-11" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-semibold text-foreground">Sender Name</label>
+                      <Input value={senderName} onChange={(e) => setSenderName(e.target.value)} placeholder="JOHN OKAFOR" className="mt-1.5 bg-muted border-border h-11" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-foreground">Sender Bank</label>
+                      <Input value={senderBank} onChange={(e) => setSenderBank(e.target.value)} placeholder="Opay" className="mt-1.5 bg-muted border-border h-11" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-foreground">Amount (₦)</label>
+                    <Input value={moneyAmount} onChange={(e) => setMoneyAmount(e.target.value)} inputMode="numeric" placeholder="50000" className="mt-1.5 bg-muted border-border h-11" />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-semibold text-foreground">Schedule Transaction</label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {SCHEDULE_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.minutes}
+                          onClick={() => setScheduleMinutes(opt.minutes)}
+                          className={`py-2.5 rounded-xl text-sm font-semibold border transition-colors ${
+                            scheduleMinutes === opt.minutes
+                              ? "bg-green-primary text-white border-green-primary"
+                              : "bg-muted text-foreground border-border"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Button onClick={sendMoney} disabled={sendingMoney} className="w-full py-6 bg-green-primary hover:bg-green-primary/90 text-white font-bold rounded-xl">
+                    <Send className="w-4 h-4 mr-2" />
+                    {sendingMoney ? "Sending..." : "Send Money"}
+                  </Button>
+
+                  {scheduled.filter((s) => s.status === "scheduled").length > 0 && (
+                    <div className="pt-1 space-y-2">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Pending Transfers</p>
+                      {scheduled.filter((s) => s.status === "scheduled").map((s) => (
+                        <div key={s.id} className="flex items-center justify-between bg-[#e8e8e0] rounded-xl px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-foreground truncate">
+                              ₦{Number(s.amount).toLocaleString()} · {s.sender_name}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Arrives {new Date(s.deliver_at).toLocaleTimeString("en-NG", { hour: "numeric", minute: "2-digit", hour12: true })}
+                            </p>
+                          </div>
+                          <button onClick={() => cancelScheduled(s.id)} className="text-xs font-semibold text-destructive px-2 py-1">
+                            Cancel
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* DEBIT USER */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="w-5 h-5 text-destructive" />
+                    <h3 className="font-bold text-foreground text-base">Debit a User</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Remove money from a user's dashboard balance. They get a debit alert.
+                  </p>
+                  <div>
+                    <label className="text-sm font-semibold text-foreground">User Email</label>
+                    <Input value={debitEmail} onChange={(e) => setDebitEmail(e.target.value)} type="email" placeholder="user@email.com" className="mt-1.5 bg-muted border-border h-11" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-semibold text-foreground">Amount (₦)</label>
+                      <Input value={debitAmount} onChange={(e) => setDebitAmount(e.target.value)} inputMode="numeric" placeholder="5000" className="mt-1.5 bg-muted border-border h-11" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-foreground">Narration</label>
+                      <Input value={debitReason} onChange={(e) => setDebitReason(e.target.value)} placeholder="Service charge" className="mt-1.5 bg-muted border-border h-11" />
+                    </div>
+                  </div>
+                  <Button onClick={debitUser} disabled={debiting} className="w-full py-6 bg-destructive hover:bg-destructive/90 text-white font-bold rounded-xl">
+                    {debiting ? "Debiting..." : "Debit User"}
+                  </Button>
+                </div>
+
+                {/* USER INFORMATION */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Search className="w-5 h-5 text-green-primary" />
+                    <h3 className="font-bold text-foreground text-base">Generate User Information</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Enter a user's email to see their full activity: account, promo code, withdrawals, chat and service attempts.
+                  </p>
+                  <Input value={reportEmail} onChange={(e) => setReportEmail(e.target.value)} type="email" placeholder="user@email.com" className="bg-muted border-border h-11" />
+                  <Button onClick={generateReport} disabled={reportLoading} className="w-full py-6 bg-[#2d4a3e] hover:bg-[#2d4a3e]/90 text-white font-bold rounded-xl">
+                    {reportLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Generating information...
+                      </>
+                    ) : (
+                      "Generate Information"
+                    )}
+                  </Button>
+
+                  {report && (
+                    <div className="space-y-3 pt-1">
+                      <div className="bg-[#e8e8e0] rounded-xl p-3">
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold">Account Name</p>
+                        <p className="text-lg font-extrabold text-foreground">{report.full_name || report.username}</p>
+                        <p className="text-sm text-muted-foreground">{report.email}</p>
+                        <p className="text-[12px] text-muted-foreground mt-1">
+                          Username: <span className="font-semibold text-foreground">{report.username}</span>
+                        </p>
+                        <p className="text-[12px] text-muted-foreground">
+                          Registered: {report.registered_at ? formatDateShort(report.registered_at) : "—"}
+                        </p>
+                        <p className="text-[12px] text-muted-foreground">
+                          Balance: <span className="font-bold text-green-primary">₦{Number(report.balance).toLocaleString()}</span>
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-xl border border-border p-3">
+                          <p className="text-[11px] text-muted-foreground font-bold uppercase">Bought Code</p>
+                          <p className="text-sm font-bold text-foreground">
+                            {report.codes?.length ? "Yes" : report.purchases?.length ? "Attempted (pending)" : "No"}
+                          </p>
+                          {report.codes?.[0] && (
+                            <p className="text-[12px] text-green-primary font-bold tracking-wider">{report.codes[0].code}</p>
+                          )}
+                          {report.codes?.[0] && (
+                            <p className="text-[11px] text-muted-foreground">
+                              {report.codes[0].is_activated ? "Activated" : "Not activated"}
+                            </p>
+                          )}
+                        </div>
+                        <div className="rounded-xl border border-border p-3">
+                          <p className="text-[11px] text-muted-foreground font-bold uppercase">Withdrawals</p>
+                          <p className="text-sm font-bold text-foreground">{report.withdrawals?.length || 0}</p>
+                          {report.withdrawals?.[0] && (
+                            <p className="text-[11px] text-muted-foreground">
+                              Last: ₦{Number(report.withdrawals[0].amount).toLocaleString()} · {report.withdrawals[0].status}
+                            </p>
+                          )}
+                        </div>
+                        <div className="rounded-xl border border-border p-3">
+                          <p className="text-[11px] text-muted-foreground font-bold uppercase">Live Chat</p>
+                          <p className="text-sm font-bold text-foreground">{report.chat_count || 0} messages</p>
+                          {report.last_message && (
+                            <p className="text-[11px] text-muted-foreground truncate">“{report.last_message.message}”</p>
+                          )}
+                        </div>
+                        <div className="rounded-xl border border-border p-3">
+                          <p className="text-[11px] text-muted-foreground font-bold uppercase">Wallet</p>
+                          <p className="text-sm font-bold text-foreground">{report.wallet_unlocked ? "Unlocked" : "Locked"}</p>
+                          <p className="text-[11px] text-muted-foreground">{report.gift_claimed ? "Bonus claimed" : "Bonus not claimed"}</p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-border p-3">
+                        <p className="text-[11px] text-muted-foreground font-bold uppercase mb-1">Service Activity</p>
+                        {report.service_attempts?.length ? (
+                          <ul className="space-y-1">
+                            {report.service_attempts.slice(0, 5).map((s: any, i: number) => (
+                              <li key={i} className="text-[12px] text-foreground">• {s.message}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-[12px] text-muted-foreground">No data, airtime or other service activity yet.</p>
+                        )}
+                        {report.tickets?.length > 0 && (
+                          <p className="text-[12px] text-muted-foreground mt-2">
+                            {report.tickets.length} support report{report.tickets.length > 1 ? "s" : ""} submitted
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
+
             )}
 
           </>

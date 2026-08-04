@@ -113,6 +113,72 @@ const saveUserNotification = async (
   });
 };
 
+// ---------- Money helpers ----------
+const findUserByEmail = async (supabase: any, email: string) => {
+  const target = email.toLowerCase().trim();
+  let page = 1;
+  while (page < 50) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) break;
+    const list = data?.users || [];
+    const hit = list.find((u: any) => (u.email || "").toLowerCase() === target);
+    if (hit) return hit;
+    if (list.length < 200) break;
+    page++;
+  }
+  return null;
+};
+
+const adjustBalance = async (supabase: any, userId: string, delta: number) => {
+  const { data: state } = await supabase
+    .from("user_app_state")
+    .select("balance, gift_claimed")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const current = Number(state?.balance || 0);
+  const next = Math.max(0, current + delta);
+  await supabase.from("user_app_state").upsert(
+    {
+      user_id: userId,
+      balance: next,
+      gift_claimed: next > 0 ? true : false,
+    },
+    { onConflict: "user_id" },
+  );
+  return next;
+};
+
+const deliverTransfer = async (supabase: any, transfer: any) => {
+  const amount = Number(transfer.amount || 0);
+  const isCredit = transfer.direction !== "debit";
+  const balanceAfter = await adjustBalance(supabase, transfer.user_id, isCredit ? amount : -amount);
+
+  await supabase.from("user_notifications").insert({
+    user_id: transfer.user_id,
+    type: isCredit ? "bank_credit" : "bank_debit",
+    amount,
+    message: isCredit
+      ? `Credit Alert: NGN${amount.toLocaleString("en-NG")} from ${transfer.sender_name}`
+      : `Debit Alert: NGN${amount.toLocaleString("en-NG")} to ${transfer.sender_name}`,
+    meta: {
+      sender_name: transfer.sender_name,
+      sender_bank: transfer.sender_bank,
+      amount,
+      direction: isCredit ? "credit" : "debit",
+      balance_after: balanceAfter,
+      reference: `SPY${Date.now().toString().slice(-10)}`,
+      occurred_at: new Date().toISOString(),
+    },
+  });
+
+  await supabase
+    .from("scheduled_transfers")
+    .update({ status: "delivered", processed_at: new Date().toISOString() })
+    .eq("id", transfer.id);
+
+  return balanceAfter;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (!JWT_SECRET) return json({ error: "Server misconfigured" }, 500);
@@ -125,7 +191,9 @@ Deno.serve(async (req) => {
     "admin_login", "admin_register", "admin_status",
     "get_payment_details", "verify_service_code",
     "verify_admin_withdraw_pin", "verify_master_code",
+    "process_scheduled_transfers",
   ]);
+
 
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -587,8 +655,145 @@ Deno.serve(async (req) => {
       return json(enriched);
     }
 
+    // ---------- SCHEDULED TRANSFER PROCESSOR (cron) ----------
+    if (action === "process_scheduled_transfers") {
+      const { data: due } = await supabase
+        .from("scheduled_transfers")
+        .select("*")
+        .eq("status", "scheduled")
+        .lte("deliver_at", new Date().toISOString())
+        .limit(50);
+      let delivered = 0;
+      for (const t of (due || [])) {
+        try { await deliverTransfer(supabase, t); delivered++; } catch (_) {}
+      }
+      return json({ success: true, delivered });
+    }
+
+    // ---------- ADMIN: FULL USER REPORT ----------
+    if (req.method === "GET" && action === "user_report") {
+      const email = (url.searchParams.get("email") || "").trim();
+      if (!isEmail(email)) return json({ error: "Enter a valid email address" }, 400);
+
+      const authUser = await findUserByEmail(supabase, email);
+      let userId = authUser?.id as string | undefined;
+      if (!userId) {
+        const { data: pp } = await supabase
+          .from("promo_purchases").select("user_id").ilike("email", email).limit(1);
+        userId = pp?.[0]?.user_id;
+      }
+      if (!userId) return json({ error: "No user found with that email" }, 404);
+
+      const [profileRes, stateRes, purchasesRes, codesRes, withdrawalsRes, chatRes, ticketsRes, notifRes] =
+        await Promise.all([
+          supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+          supabase.from("user_app_state").select("*").eq("user_id", userId).maybeSingle(),
+          supabase.from("promo_purchases").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+          supabase.from("promo_codes").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+          supabase.from("withdrawal_requests").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+          supabase.from("chat_messages").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+          supabase.from("support_tickets").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+          supabase.from("user_notifications").select("type, message, amount, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
+        ]);
+
+      const notifications = notifRes.data || [];
+      const serviceAttempts = notifications.filter((n: any) =>
+        /data|airtime|electricity|cable|betting|internet|gift ?card/i.test(String(n.message || ""))
+      );
+      const messages = chatRes.data || [];
+
+      return json({
+        user_id: userId,
+        email: authUser?.email || email,
+        username: profileRes.data?.username || purchasesRes.data?.[0]?.username || "User",
+        full_name: purchasesRes.data?.[0]?.full_name || null,
+        avatar_url: profileRes.data?.avatar_url || null,
+        registered_at: authUser?.created_at || profileRes.data?.created_at || null,
+        last_sign_in_at: authUser?.last_sign_in_at || null,
+        balance: Number(stateRes.data?.balance || 0),
+        gift_claimed: !!stateRes.data?.gift_claimed,
+        wallet_unlocked: !!stateRes.data?.wallet_unlocked,
+        purchases: purchasesRes.data || [],
+        codes: codesRes.data || [],
+        withdrawals: withdrawalsRes.data || [],
+        chat_count: messages.length,
+        last_message: messages[0] || null,
+        user_messages: messages.filter((m: any) => m.sender_type === "user").length,
+        tickets: ticketsRes.data || [],
+        service_attempts: serviceAttempts,
+        recent_notifications: notifications.slice(0, 10),
+      });
+    }
+
+
+
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
+
+      // ---------- ADMIN: SEND MONEY TO A USER ----------
+      if (body.action === "send_money" || body.action === "debit_user") {
+        const isDebit = body.action === "debit_user";
+        const email = typeof body.email === "string" ? body.email.trim() : "";
+        const amount = Number(body.amount);
+        const senderName = typeof body.sender_name === "string" ? body.sender_name.trim().slice(0, 100) : "";
+        const senderBank = typeof body.sender_bank === "string" ? body.sender_bank.trim().slice(0, 100) : "";
+        const delayMinutes = Number(body.delay_minutes || 0);
+
+        if (!isEmail(email)) return json({ error: "Enter a valid user email" }, 400);
+        if (!Number.isFinite(amount) || amount <= 0 || amount > 100000000) {
+          return json({ error: "Enter a valid amount" }, 400);
+        }
+        if (!isDebit && (!senderName || !senderBank)) {
+          return json({ error: "Sender name and sender bank are required" }, 400);
+        }
+        if (!Number.isFinite(delayMinutes) || delayMinutes < 0 || delayMinutes > 1440) {
+          return json({ error: "Invalid schedule" }, 400);
+        }
+
+        const authUser = await findUserByEmail(supabase, email);
+        let userId = authUser?.id as string | undefined;
+        if (!userId) {
+          const { data: pp } = await supabase
+            .from("promo_purchases").select("user_id").ilike("email", email).limit(1);
+          userId = pp?.[0]?.user_id;
+        }
+        if (!userId) return json({ error: "No user found with that email" }, 404);
+
+        const deliverAt = new Date(Date.now() + delayMinutes * 60 * 1000);
+        const { data: inserted, error: insErr } = await supabase
+          .from("scheduled_transfers")
+          .insert({
+            user_id: userId,
+            direction: isDebit ? "debit" : "credit",
+            sender_name: senderName || (isDebit ? "SmartPay Debit" : "SmartPay"),
+            sender_bank: senderBank || "SmartPay",
+            amount,
+            deliver_at: deliverAt.toISOString(),
+            status: "scheduled",
+          })
+          .select("*")
+          .single();
+        if (insErr) throw insErr;
+
+        if (delayMinutes <= 0) {
+          const balanceAfter = await deliverTransfer(supabase, inserted);
+          return json({ success: true, delivered: true, balance: balanceAfter });
+        }
+        return json({ success: true, delivered: false, deliver_at: inserted.deliver_at });
+      }
+
+      if (body.action === "cancel_scheduled_transfer") {
+        if (typeof body.id !== "string") return json({ error: "Invalid input" }, 400);
+        const { error } = await supabase
+          .from("scheduled_transfers")
+          .update({ status: "cancelled", processed_at: new Date().toISOString() })
+          .eq("id", body.id)
+          .eq("status", "scheduled");
+        if (error) throw error;
+        return json({ success: true });
+      }
+
+
 
       if (body.action === "verify_payment") {
         const { purchase_id } = body;
@@ -764,7 +969,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (req.method === "GET" && action === "scheduled_transfers") {
+      const { data, error } = await supabase
+        .from("scheduled_transfers")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return json(data || []);
+    }
+
     if (req.method === "GET" && action === "app_stats") {
+
       // Real registered user count from auth
       let totalUsers = 0;
       let page = 1;
