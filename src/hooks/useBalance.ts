@@ -106,10 +106,34 @@ export const useBalance = () => {
 
     loadState();
 
+    // Live updates: admin credits/debits reflect instantly without refresh
+    const channel = supabase
+      .channel("user-app-state-" + userId)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "user_app_state",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload: any) => {
+          if (cancelled) return;
+          const nextBalance = Number(payload.new?.balance || 0);
+          const nextClaimed = Boolean(payload.new?.gift_claimed);
+          setBalance(nextBalance);
+          setIsClaimed(nextClaimed);
+          writeCache(userId, nextBalance, nextClaimed);
+        }
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      supabase.removeChannel(channel);
     };
   }, [userId]);
+
 
   const persistState = useCallback(async (nextBalance: number, nextClaimed: boolean) => {
     if (!userId) return;
