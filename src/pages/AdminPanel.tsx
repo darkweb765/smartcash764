@@ -393,6 +393,114 @@ const AdminPanel = () => {
     }
   };
 
+  // ---- Send / debit money state ----
+  const SCHEDULE_OPTIONS = [
+    { label: "Instantly", minutes: 0 },
+    { label: "In 1 minute", minutes: 1 },
+    { label: "In 2 minutes", minutes: 2 },
+    { label: "In 2 hours", minutes: 120 },
+  ];
+  const [moneyEmail, setMoneyEmail] = useState("");
+  const [senderName, setSenderName] = useState("");
+  const [senderBank, setSenderBank] = useState("");
+  const [moneyAmount, setMoneyAmount] = useState("");
+  const [scheduleMinutes, setScheduleMinutes] = useState(0);
+  const [sendingMoney, setSendingMoney] = useState(false);
+
+  const [debitEmail, setDebitEmail] = useState("");
+  const [debitAmount, setDebitAmount] = useState("");
+  const [debitReason, setDebitReason] = useState("");
+  const [debiting, setDebiting] = useState(false);
+
+  const [scheduled, setScheduled] = useState<any[]>([]);
+
+  const loadScheduled = async () => {
+    const data = await callAdmin("GET", "scheduled_transfers");
+    if (Array.isArray(data)) setScheduled(data);
+  };
+
+  const sendMoney = async () => {
+    const amount = Number(String(moneyAmount).replace(/[^0-9.]/g, ""));
+    if (!moneyEmail.trim() || !senderName.trim() || !senderBank.trim() || !amount) {
+      toast({ title: "Fill in all fields", description: "User email, sender name, sender bank and amount are required.", variant: "destructive" });
+      return;
+    }
+    setSendingMoney(true);
+    const res = await callAdmin("POST", "", {
+      action: "send_money",
+      email: moneyEmail.trim(),
+      sender_name: senderName.trim(),
+      sender_bank: senderBank.trim(),
+      amount,
+      delay_minutes: scheduleMinutes,
+    });
+    setSendingMoney(false);
+    if (res?.success) {
+      setSuccessMsg(
+        res.delivered
+          ? `₦${amount.toLocaleString()} sent successfully.\nThe user has received the credit alert.`
+          : `₦${amount.toLocaleString()} scheduled.\nIt will land in the user's account ${SCHEDULE_OPTIONS.find(o => o.minutes === scheduleMinutes)?.label.toLowerCase()}.`
+      );
+      setMoneyAmount("");
+      loadScheduled();
+    } else {
+      toast({ title: res?.error || "Could not send money", variant: "destructive" });
+    }
+  };
+
+  const debitUser = async () => {
+    const amount = Number(String(debitAmount).replace(/[^0-9.]/g, ""));
+    if (!debitEmail.trim() || !amount) {
+      toast({ title: "Enter user email and amount", variant: "destructive" });
+      return;
+    }
+    setDebiting(true);
+    const res = await callAdmin("POST", "", {
+      action: "debit_user",
+      email: debitEmail.trim(),
+      amount,
+      sender_name: debitReason.trim() || "SmartPay",
+      sender_bank: "SmartPay",
+      delay_minutes: 0,
+    });
+    setDebiting(false);
+    if (res?.success) {
+      setSuccessMsg(`₦${amount.toLocaleString()} debited.\nNew balance: ₦${Number(res.balance || 0).toLocaleString()}`);
+      setDebitAmount("");
+    } else {
+      toast({ title: res?.error || "Could not debit user", variant: "destructive" });
+    }
+  };
+
+  const cancelScheduled = async (id: string) => {
+    const res = await callAdmin("POST", "", { action: "cancel_scheduled_transfer", id });
+    if (res?.success) loadScheduled();
+  };
+
+  // ---- User information report ----
+  const [reportEmail, setReportEmail] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+  const [report, setReport] = useState<any | null>(null);
+
+  const generateReport = async () => {
+    const email = reportEmail.trim();
+    if (!email) {
+      toast({ title: "Enter the user's email", variant: "destructive" });
+      return;
+    }
+    setReportLoading(true);
+    setReport(null);
+    const started = Date.now();
+    const data = await callAdmin("GET", "user_report", undefined, `&email=${encodeURIComponent(email)}`);
+    const elapsed = Date.now() - started;
+    if (elapsed < 1200) await new Promise((r) => setTimeout(r, 1200 - elapsed));
+    setReportLoading(false);
+    if (data && data.user_id) setReport(data);
+    else toast({ title: data?.error || "No user found with that email", variant: "destructive" });
+  };
+
+
+
   // Account settings state
   const [acctNumber, setAcctNumber] = useState("");
   const [acctName, setAcctName] = useState("");
