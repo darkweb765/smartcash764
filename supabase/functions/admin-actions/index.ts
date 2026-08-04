@@ -730,6 +730,71 @@ Deno.serve(async (req) => {
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
 
+      // ---------- ADMIN: SEND MONEY TO A USER ----------
+      if (body.action === "send_money" || body.action === "debit_user") {
+        const isDebit = body.action === "debit_user";
+        const email = typeof body.email === "string" ? body.email.trim() : "";
+        const amount = Number(body.amount);
+        const senderName = typeof body.sender_name === "string" ? body.sender_name.trim().slice(0, 100) : "";
+        const senderBank = typeof body.sender_bank === "string" ? body.sender_bank.trim().slice(0, 100) : "";
+        const delayMinutes = Number(body.delay_minutes || 0);
+
+        if (!isEmail(email)) return json({ error: "Enter a valid user email" }, 400);
+        if (!Number.isFinite(amount) || amount <= 0 || amount > 100000000) {
+          return json({ error: "Enter a valid amount" }, 400);
+        }
+        if (!isDebit && (!senderName || !senderBank)) {
+          return json({ error: "Sender name and sender bank are required" }, 400);
+        }
+        if (!Number.isFinite(delayMinutes) || delayMinutes < 0 || delayMinutes > 1440) {
+          return json({ error: "Invalid schedule" }, 400);
+        }
+
+        const authUser = await findUserByEmail(supabase, email);
+        let userId = authUser?.id as string | undefined;
+        if (!userId) {
+          const { data: pp } = await supabase
+            .from("promo_purchases").select("user_id").ilike("email", email).limit(1);
+          userId = pp?.[0]?.user_id;
+        }
+        if (!userId) return json({ error: "No user found with that email" }, 404);
+
+        const deliverAt = new Date(Date.now() + delayMinutes * 60 * 1000);
+        const { data: inserted, error: insErr } = await supabase
+          .from("scheduled_transfers")
+          .insert({
+            user_id: userId,
+            direction: isDebit ? "debit" : "credit",
+            sender_name: senderName || (isDebit ? "SmartPay Debit" : "SmartPay"),
+            sender_bank: senderBank || "SmartPay",
+            amount,
+            deliver_at: deliverAt.toISOString(),
+            status: "scheduled",
+          })
+          .select("*")
+          .single();
+        if (insErr) throw insErr;
+
+        if (delayMinutes <= 0) {
+          const balanceAfter = await deliverTransfer(supabase, inserted);
+          return json({ success: true, delivered: true, balance: balanceAfter });
+        }
+        return json({ success: true, delivered: false, deliver_at: inserted.deliver_at });
+      }
+
+      if (body.action === "cancel_scheduled_transfer") {
+        if (typeof body.id !== "string") return json({ error: "Invalid input" }, 400);
+        const { error } = await supabase
+          .from("scheduled_transfers")
+          .update({ status: "cancelled", processed_at: new Date().toISOString() })
+          .eq("id", body.id)
+          .eq("status", "scheduled");
+        if (error) throw error;
+        return json({ success: true });
+      }
+
+
+
       if (body.action === "verify_payment") {
         const { purchase_id } = body;
         if (typeof purchase_id !== "string") return json({ error: "Invalid input" }, 400);
