@@ -113,6 +113,72 @@ const saveUserNotification = async (
   });
 };
 
+// ---------- Money helpers ----------
+const findUserByEmail = async (supabase: any, email: string) => {
+  const target = email.toLowerCase().trim();
+  let page = 1;
+  while (page < 50) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) break;
+    const list = data?.users || [];
+    const hit = list.find((u: any) => (u.email || "").toLowerCase() === target);
+    if (hit) return hit;
+    if (list.length < 200) break;
+    page++;
+  }
+  return null;
+};
+
+const adjustBalance = async (supabase: any, userId: string, delta: number) => {
+  const { data: state } = await supabase
+    .from("user_app_state")
+    .select("balance, gift_claimed")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const current = Number(state?.balance || 0);
+  const next = Math.max(0, current + delta);
+  await supabase.from("user_app_state").upsert(
+    {
+      user_id: userId,
+      balance: next,
+      gift_claimed: next > 0 ? true : false,
+    },
+    { onConflict: "user_id" },
+  );
+  return next;
+};
+
+const deliverTransfer = async (supabase: any, transfer: any) => {
+  const amount = Number(transfer.amount || 0);
+  const isCredit = transfer.direction !== "debit";
+  const balanceAfter = await adjustBalance(supabase, transfer.user_id, isCredit ? amount : -amount);
+
+  await supabase.from("user_notifications").insert({
+    user_id: transfer.user_id,
+    type: isCredit ? "bank_credit" : "bank_debit",
+    amount,
+    message: isCredit
+      ? `Credit Alert: NGN${amount.toLocaleString("en-NG")} from ${transfer.sender_name}`
+      : `Debit Alert: NGN${amount.toLocaleString("en-NG")} to ${transfer.sender_name}`,
+    meta: {
+      sender_name: transfer.sender_name,
+      sender_bank: transfer.sender_bank,
+      amount,
+      direction: isCredit ? "credit" : "debit",
+      balance_after: balanceAfter,
+      reference: `SPY${Date.now().toString().slice(-10)}`,
+      occurred_at: new Date().toISOString(),
+    },
+  });
+
+  await supabase
+    .from("scheduled_transfers")
+    .update({ status: "delivered", processed_at: new Date().toISOString() })
+    .eq("id", transfer.id);
+
+  return balanceAfter;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (!JWT_SECRET) return json({ error: "Server misconfigured" }, 500);
@@ -125,7 +191,9 @@ Deno.serve(async (req) => {
     "admin_login", "admin_register", "admin_status",
     "get_payment_details", "verify_service_code",
     "verify_admin_withdraw_pin", "verify_master_code",
+    "process_scheduled_transfers",
   ]);
+
 
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
