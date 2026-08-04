@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Gift, CheckCircle, Clock, AlertCircle, Copy, Check, MessageSquare, KeyRound } from "lucide-react";
+import { ArrowLeft, Gift, CheckCircle, Clock, AlertCircle, Copy, Check, MessageSquare, KeyRound, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 
 const Notifications = () => {
