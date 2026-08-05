@@ -88,16 +88,8 @@ const JoinWhatsAppPopup = () => {
     localStorage.setItem(KEY_LAST_SHOWN, String(Date.now()));
     setOpen(false);
 
-    // Open WhatsApp app directly — no browser/web fallback.
+    // Open the official channel link — WhatsApp app handles it directly.
     openWhatsAppChannel();
-
-    // Fallback: if WhatsApp isn't installed, nothing will handle the link.
-    // After a short delay, if we're still here, show install prompt.
-    setTimeout(() => {
-      if (document.visibilityState === "visible") {
-        setShowInstall(true);
-      }
-    }, 1500);
   };
 
   const handleClose = () => {
