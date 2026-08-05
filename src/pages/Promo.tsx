@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { openWhatsAppChannel } from "@/utils/openWhatsApp";
 import { ArrowLeft, MessageCircle, ShoppingCart, Info, Headphones } from "lucide-react";
 import {
   Dialog,
@@ -18,7 +19,7 @@ const Promo = () => {
       label: "Join WhatsApp Channel",
       color: "bg-green-100",
       iconColor: "text-green-600",
-      onClick: () => window.open("https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40", "_blank"),
+      onClick: openWhatsAppChannel,
     },
     {
       icon: ShoppingCart,
