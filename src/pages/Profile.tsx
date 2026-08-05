@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { openWhatsAppChannel } from "@/utils/openWhatsApp";
 import { ArrowLeft, User, Settings, ShoppingCart, Info, MessageCircle, Shield, HelpCircle, LogOut, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -60,7 +61,7 @@ const Profile = () => {
     { icon: Settings, label: "Account Settings", onClick: () => navigate("/account-settings") },
     { icon: ShoppingCart, label: "Buy Promo Code", onClick: () => navigate("/buy-promo") },
     { icon: Info, label: "About SmartPay", onClick: () => navigate("/about-smartpay") },
-    { icon: MessageCircle, label: "Join WhatsApp Channel", onClick: () => window.open("https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40", "_blank") },
+    { icon: MessageCircle, label: "Join WhatsApp Channel", onClick: openWhatsAppChannel },
     { icon: Shield, label: "Security", onClick: () => navigate("/security") },
     { icon: HelpCircle, label: "Help & Support", onClick: () => navigate("/help-support") },
   ];

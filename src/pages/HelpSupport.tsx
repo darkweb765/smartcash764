@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { openWhatsAppChannel } from "@/utils/openWhatsApp";
 import { ArrowLeft, MessageSquare, AlertTriangle, Phone, Mail, HelpCircle, ChevronDown, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,8 +23,6 @@ const HelpSupport = () => {
     };
     fetchUser();
   }, []);
-
-  const whatsappChannel = "https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40";
 
   const contactOptions = [
     {
@@ -142,7 +141,7 @@ const HelpSupport = () => {
       {/* Join Community Button */}
       <div className="px-4 pb-6 mt-auto">
         <button
-          onClick={() => window.open(whatsappChannel, "_blank")}
+          onClick={openWhatsAppChannel}
           className="w-full flex items-center justify-center gap-2 py-4 bg-[#1a3a2a] rounded-xl text-white font-semibold text-base active:opacity-70"
           style={{ WebkitTapHighlightColor: "transparent" }}
         >

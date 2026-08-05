@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { openWhatsAppChannel } from "@/utils/openWhatsApp";
 import { 
   Phone, 
   Wifi, 
@@ -15,6 +16,7 @@ interface ServiceItem {
   icon: React.ReactNode;
   label: string;
   path: string;
+  isExternal?: boolean;
 }
 
 const ServiceGrid = () => {
@@ -25,7 +27,7 @@ const ServiceGrid = () => {
     { icon: <Wifi className="w-7 h-7" strokeWidth={1.5} />, label: "Data", path: "/data" },
     { icon: <Monitor className="w-7 h-7" strokeWidth={1.5} />, label: "CableTv", path: "/cable-tv" },
     { icon: <Zap className="w-7 h-7" strokeWidth={1.5} />, label: "Live Chat", path: "/live-chat" },
-    { icon: <Globe className="w-7 h-7" strokeWidth={1.5} />, label: "Join Group", path: "/join-group" },
+    { icon: <Globe className="w-7 h-7" strokeWidth={1.5} />, label: "Join Group", path: "/join-group", isExternal: true },
     { icon: <CreditCard className="w-7 h-7" strokeWidth={1.5} />, label: "Buy Promo Code", path: "/buy-promo" },
     { icon: <AtSign className="w-7 h-7" strokeWidth={1.5} />, label: "Betting", path: "/betting" },
     { icon: <Gift className="w-7 h-7" strokeWidth={1.5} />, label: "Giftcard", path: "/giftcard" },
@@ -38,8 +40,15 @@ const ServiceGrid = () => {
         {services.map((service, index) => (
           <button
             key={index}
-            onClick={() => navigate(service.path)}
+            onClick={() => {
+              if (service.isExternal) {
+                openWhatsAppChannel();
+              } else {
+                navigate(service.path);
+              }
+            }}
             className="flex flex-col items-center gap-2 py-4 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+            style={{ WebkitTapHighlightColor: "transparent" }}
           >
             <span className="text-muted-foreground">{service.icon}</span>
             <span className="text-xs text-foreground font-medium">

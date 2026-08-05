@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
-
-const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029VbAxtp984OmCYlddio40";
+import { openWhatsAppChannel } from "@/utils/openWhatsApp";
 
 const KEY_JOINED = "smartpay_whatsapp_joined";
 const KEY_FIRST_SEEN = "smartpay_whatsapp_first_seen";
@@ -89,25 +88,16 @@ const JoinWhatsAppPopup = () => {
     localStorage.setItem(KEY_LAST_SHOWN, String(Date.now()));
     setOpen(false);
 
-    // Try to open the installed WhatsApp app directly (mobile).
-    // WhatsApp's https channel link is a universal link that opens the app when installed.
-    const ua = navigator.userAgent || "";
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+    // Open WhatsApp app directly — no browser/web fallback.
+    openWhatsAppChannel();
 
-    if (isMobile) {
-      // Direct app navigation — no new tab/browser window.
-      window.location.href = WHATSAPP_CHANNEL_URL;
-
-      // Fallback: if WhatsApp isn't installed, nothing will handle the link.
-      // After a short delay, if we're still here, show install prompt.
-      setTimeout(() => {
-        if (document.visibilityState === "visible") {
-          setShowInstall(true);
-        }
-      }, 1500);
-    } else {
-      window.location.href = WHATSAPP_CHANNEL_URL;
-    }
+    // Fallback: if WhatsApp isn't installed, nothing will handle the link.
+    // After a short delay, if we're still here, show install prompt.
+    setTimeout(() => {
+      if (document.visibilityState === "visible") {
+        setShowInstall(true);
+      }
+    }, 1500);
   };
 
   const handleClose = () => {
