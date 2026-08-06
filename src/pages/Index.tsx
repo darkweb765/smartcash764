@@ -52,6 +52,7 @@ const Index = () => {
       />
 
       <JoinWhatsAppPopup />
+      <JoinTelegramPopup />
     </div>
   );
 };
