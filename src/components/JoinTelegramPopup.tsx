@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-const KEY_SHOWN = "smartpay_telegram_popup_shown";
+const keyFor = (uid: string) => `smartpay_telegram_popup_shown_${uid}`;
+
+// Only treat an account as "just registered" within this window.
+const NEW_ACCOUNT_WINDOW = 15 * 60 * 1000;
 
 const TELEGRAM_USERNAME = "smartpay3517";
 const TELEGRAM_WEB = `https://t.me/${TELEGRAM_USERNAME}`;
@@ -31,17 +35,45 @@ const openTelegramChannel = () => {
 
 const JoinTelegramPopup = () => {
   const [open, setOpen] = useState(false);
+  const uidRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (localStorage.getItem(KEY_SHOWN) === "1") return;
-    const t = window.setTimeout(() => setOpen(true), 1200);
-    return () => window.clearTimeout(t);
+    let cancelled = false;
+    let timer: number | undefined;
+
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        if (cancelled || !user) return;
+        uidRef.current = user.id;
+
+        // Already shown once for this account.
+        if (localStorage.getItem(keyFor(user.id)) === "1") return;
+
+        // Only for freshly registered accounts.
+        const createdAt = user.created_at ? Date.parse(user.created_at) : 0;
+        if (!createdAt || Date.now() - createdAt > NEW_ACCOUNT_WINDOW) {
+          localStorage.setItem(keyFor(user.id), "1");
+          return;
+        }
+
+        timer = window.setTimeout(() => {
+          if (!cancelled) setOpen(true);
+        }, 1200);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
   }, []);
 
   const dismiss = () => {
-    localStorage.setItem(KEY_SHOWN, "1");
+    if (uidRef.current) localStorage.setItem(keyFor(uidRef.current), "1");
     setOpen(false);
   };
+
 
   const handleJoin = () => {
     dismiss();
