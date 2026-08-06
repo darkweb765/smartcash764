@@ -35,7 +35,6 @@ const JoinWhatsAppPopup = () => {
 
   useEffect(() => {
     const now = Date.now();
-    const joined = localStorage.getItem(KEY_JOINED) === "1";
     let firstSeen = Number(localStorage.getItem(KEY_FIRST_SEEN) || 0);
 
     if (!firstSeen) {
@@ -64,29 +63,30 @@ const JoinWhatsAppPopup = () => {
       }
     };
 
-    // Show first time immediately (or after 6 min if already joined)
+    const joined = localStorage.getItem(KEY_JOINED) === "1";
+    let firstTimer: number | undefined;
+
     if (!joined) {
-      evaluate();
+      // Show immediately for brand-new users.
+      firstTimer = window.setTimeout(evaluate, 400);
     } else {
       const lastShown = Number(localStorage.getItem(KEY_LAST_SHOWN) || firstSeen);
-      const elapsed = now - lastShown;
-      const delay = Math.max(0, SIX_MINUTES - elapsed);
-      const t0 = setTimeout(evaluate, delay);
-      const interval = setInterval(evaluate, SIX_MINUTES);
-      return () => {
-        clearTimeout(t0);
-        clearInterval(interval);
-      };
+      const delay = Math.max(0, SIX_MINUTES - (now - lastShown));
+      firstTimer = window.setTimeout(evaluate, delay);
     }
 
-    const interval = setInterval(evaluate, SIX_MINUTES);
-    return () => clearInterval(interval);
+    const interval = window.setInterval(evaluate, 30 * 1000);
+    return () => {
+      if (firstTimer) window.clearTimeout(firstTimer);
+      window.clearInterval(interval);
+    };
   }, []);
 
   const handleJoin = () => {
     localStorage.setItem(KEY_JOINED, "1");
     localStorage.setItem(KEY_LAST_SHOWN, String(Date.now()));
     setOpen(false);
+    setFirstTime(false);
 
     // Open the official channel link — WhatsApp app handles it directly.
     openWhatsAppChannel();
@@ -94,8 +94,10 @@ const JoinWhatsAppPopup = () => {
 
   const handleClose = () => {
     if (firstTime) return; // must join first time
+    localStorage.setItem(KEY_LAST_SHOWN, String(Date.now()));
     setOpen(false);
   };
+
 
   return (
     <>
