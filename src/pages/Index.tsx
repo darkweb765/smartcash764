@@ -7,6 +7,7 @@ import ServiceGrid from "@/components/ServiceGrid";
 import BottomNav from "@/components/BottomNav";
 import SuccessDialog from "@/components/SuccessDialog";
 import JoinWhatsAppPopup from "@/components/JoinWhatsAppPopup";
+import JoinTelegramPopup from "@/components/JoinTelegramPopup";
 import { useAppContext } from "@/contexts/AppContext";
 import { playSuccessSound } from "@/utils/sounds";
 
