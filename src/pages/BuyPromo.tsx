@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, Check, X, Upload, MessageCircle } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -690,7 +690,7 @@ const BuyPromo = () => {
     <div className="min-h-screen bg-background flex flex-col relative">
       {/* Hidden admin entry — routes to backend-protected admin login */}
       <button
-        onClick={openAdminLogin}
+        onClick={handleAdminTap}
         className="absolute top-0 right-0 w-10 h-10 z-50 bg-transparent"
         aria-label="admin"
       />
