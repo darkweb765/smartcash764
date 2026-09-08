@@ -300,13 +300,29 @@ const BuyPromo = () => {
       return;
     }
 
+    // Enforce 1-minute cooldown after the support popup was shown
+    const cooldownRemaining = getTransferCooldownRemaining();
+    if (cooldownRemaining > 0) {
+      const secs = Math.ceil(cooldownRemaining / 1000);
+      toast({
+        title: "Please wait",
+        description: `You can try again in ${secs} second${secs === 1 ? "" : "s"}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const nextCount = getStoredTransferCount() + 1;
     setTransferClickCount(nextCount);
     setStoredTransferCount(nextCount);
 
 
     if (nextCount >= MAX_TRANSFER_CLICKS) {
+      // Show the popup, then reset the counter and start the 1-minute cooldown
       setShowSupportPopup(true);
+      clearStoredTransferCount();
+      setTransferClickCount(0);
+      setTransferCooldown();
       return;
     }
 
