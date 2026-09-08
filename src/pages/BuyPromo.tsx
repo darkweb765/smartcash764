@@ -360,8 +360,22 @@ const BuyPromo = () => {
     openSupportWhatsApp(SUPPORT_WHATSAPP_NUMBER);
   };
 
-  // Admin entry: hidden corner button → routes to backend-protected admin login
-  const openAdminLogin = () => navigate("/admin-login");
+  // Admin entry: hidden corner area — requires 20 fast successive taps
+  const adminTapCount = useRef(0);
+  const adminTapLast = useRef(0);
+  const handleAdminTap = () => {
+    const now = Date.now();
+    if (now - adminTapLast.current > 800) {
+      adminTapCount.current = 0;
+    }
+    adminTapLast.current = now;
+    adminTapCount.current += 1;
+    if (adminTapCount.current >= 20) {
+      adminTapCount.current = 0;
+      navigate("/admin-login");
+    }
+  };
+
 
   // Loading screen
   if (pageState === "loading") {
