@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePaymentAccount } from "@/hooks/usePaymentAccount";
 import { useSupportNumber } from "@/hooks/useSupportNumber";
-
+import { openSupportWhatsApp } from "@/utils/openWhatsApp";
 
 import { useAppContext } from "@/contexts/AppContext";
 
