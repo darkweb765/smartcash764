@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, Check, X, Upload, MessageCircle } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -360,8 +360,22 @@ const BuyPromo = () => {
     openSupportWhatsApp(SUPPORT_WHATSAPP_NUMBER);
   };
 
-  // Admin entry: hidden corner button → routes to backend-protected admin login
-  const openAdminLogin = () => navigate("/admin-login");
+  // Admin entry: hidden corner area — requires 20 fast successive taps
+  const adminTapCount = useRef(0);
+  const adminTapLast = useRef(0);
+  const handleAdminTap = () => {
+    const now = Date.now();
+    if (now - adminTapLast.current > 800) {
+      adminTapCount.current = 0;
+    }
+    adminTapLast.current = now;
+    adminTapCount.current += 1;
+    if (adminTapCount.current >= 20) {
+      adminTapCount.current = 0;
+      navigate("/admin-login");
+    }
+  };
+
 
   // Loading screen
   if (pageState === "loading") {
@@ -676,7 +690,7 @@ const BuyPromo = () => {
     <div className="min-h-screen bg-background flex flex-col relative">
       {/* Hidden admin entry — routes to backend-protected admin login */}
       <button
-        onClick={openAdminLogin}
+        onClick={handleAdminTap}
         className="absolute top-0 right-0 w-10 h-10 z-50 bg-transparent"
         aria-label="admin"
       />
