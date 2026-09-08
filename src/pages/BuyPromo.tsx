@@ -14,9 +14,34 @@ import { useAppContext } from "@/contexts/AppContext";
 type PageState = "form" | "loading" | "notice" | "account" | "verifying" | "failed" | "confirmed";
 
 const TRANSFER_CLICK_COUNT_KEY = "smartpay_transfer_click_count";
+const TRANSFER_COOLDOWN_KEY = "smartpay_transfer_cooldown_until";
 const MAX_TRANSFER_CLICKS = 3;
 // After this window the click counter resets so the user can verify again
 const TRANSFER_CLICK_RESET_MS = 2 * 60 * 60 * 1000;
+// After the support popup shows, the user must wait 1 minute before clicking again
+const TRANSFER_COOLDOWN_MS = 60 * 1000;
+
+const getTransferCooldownRemaining = (): number => {
+  try {
+    const until = Number(localStorage.getItem(TRANSFER_COOLDOWN_KEY)) || 0;
+    const remaining = until - Date.now();
+    if (remaining <= 0) {
+      localStorage.removeItem(TRANSFER_COOLDOWN_KEY);
+      return 0;
+    }
+    return remaining;
+  } catch {
+    return 0;
+  }
+};
+
+const setTransferCooldown = () => {
+  try {
+    localStorage.setItem(TRANSFER_COOLDOWN_KEY, String(Date.now() + TRANSFER_COOLDOWN_MS));
+  } catch {
+    // ignore
+  }
+};
 
 const getStoredTransferCount = (): number => {
   try {
@@ -275,13 +300,29 @@ const BuyPromo = () => {
       return;
     }
 
+    // Enforce 1-minute cooldown after the support popup was shown
+    const cooldownRemaining = getTransferCooldownRemaining();
+    if (cooldownRemaining > 0) {
+      const secs = Math.ceil(cooldownRemaining / 1000);
+      toast({
+        title: "Please wait",
+        description: `You can try again in ${secs} second${secs === 1 ? "" : "s"}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const nextCount = getStoredTransferCount() + 1;
     setTransferClickCount(nextCount);
     setStoredTransferCount(nextCount);
 
 
     if (nextCount >= MAX_TRANSFER_CLICKS) {
+      // Show the popup, then reset the counter and start the 1-minute cooldown
       setShowSupportPopup(true);
+      clearStoredTransferCount();
+      setTransferClickCount(0);
+      setTransferCooldown();
       return;
     }
 
