@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePaymentAccount } from "@/hooks/usePaymentAccount";
 import { useSupportNumber } from "@/hooks/useSupportNumber";
-
+import { openSupportWhatsApp } from "@/utils/openWhatsApp";
 
 import { useAppContext } from "@/contexts/AppContext";
 
@@ -316,16 +316,7 @@ const BuyPromo = () => {
 
   const handleChatSupportOnWhatsApp = () => {
     setShowSupportPopup(false);
-    // Try to open the installed WhatsApp app directly; fall back to wa.me link.
-    const deepLink = `whatsapp://send?phone=${SUPPORT_WHATSAPP_NUMBER}`;
-    const fallbackUrl = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}`;
-    const start = Date.now();
-    window.location.href = deepLink;
-    setTimeout(() => {
-      if (Date.now() - start > 1600 && document.visibilityState === "visible") {
-        window.location.href = fallbackUrl;
-      }
-    }, 1500);
+    openSupportWhatsApp(SUPPORT_WHATSAPP_NUMBER);
   };
 
   // Admin entry: hidden corner button → routes to backend-protected admin login
@@ -605,22 +596,22 @@ const BuyPromo = () => {
 
         {/* Support WhatsApp Popup */}
         <Dialog open={showSupportPopup} onOpenChange={(open) => { if (!open) setShowSupportPopup(false); }}>
-          <DialogContent className="max-w-sm mx-auto rounded-3xl border-0 p-0 overflow-hidden [&>button]:hidden shadow-2xl bg-white">
+          <DialogContent className="max-w-sm mx-auto rounded-3xl border-0 p-0 overflow-hidden [&>button]:hidden shadow-2xl bg-background">
             <div className="p-7 flex flex-col items-center text-center">
               <div className="w-20 h-20 rounded-full bg-[#25D366] flex items-center justify-center shadow-lg mb-5 ring-4 ring-[#25D366]/20">
                 <MessageCircle className="w-9 h-9 text-white" strokeWidth={2.2} />
               </div>
-              <h2 className="text-xl font-extrabold text-gray-900 mb-3">
-                Need Help?
+              <h2 className="text-xl font-extrabold text-foreground mb-3">
+                Contact Support
               </h2>
-              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                We have not received your payment yet. Please chat with our support team on WhatsApp and send your payment proof so we can confirm your transfer quickly.
+              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                Please contact our support team on WhatsApp and send your payment proof so we can verify your transfer and confirm your payment quickly.
               </p>
               <div className="w-full flex gap-3">
                 <Button
                   variant="outline"
                   onClick={handleCloseSupportPopup}
-                  className="flex-1 rounded-xl border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold"
+                  className="flex-1 rounded-xl border-border text-foreground hover:bg-accent font-semibold"
                 >
                   Close
                 </Button>
@@ -734,39 +725,6 @@ const BuyPromo = () => {
             >
               Thanks
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Support WhatsApp Popup */}
-      <Dialog open={showSupportPopup} onOpenChange={(open) => { if (!open) setShowSupportPopup(false); }}>
-        <DialogContent className="max-w-sm mx-auto rounded-3xl border-0 p-0 overflow-hidden [&>button]:hidden shadow-2xl bg-white">
-          <div className="p-7 flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full bg-[#25D366] flex items-center justify-center shadow-lg mb-5 ring-4 ring-[#25D366]/20">
-              <MessageCircle className="w-9 h-9 text-white" strokeWidth={2.2} />
-            </div>
-            <h2 className="text-xl font-extrabold text-gray-900 mb-3">
-              Need Help?
-            </h2>
-            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-              We have not received your payment yet. Please chat with our support team on WhatsApp and send your payment proof so we can confirm your transfer quickly.
-            </p>
-            <div className="w-full flex gap-3">
-              <Button
-                variant="outline"
-                onClick={handleCloseSupportPopup}
-                className="flex-1 rounded-xl border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold"
-              >
-                Close
-              </Button>
-              <Button
-                onClick={handleChatSupportOnWhatsApp}
-                className="flex-1 rounded-xl text-white font-semibold shadow-lg border-0 bg-[#25D366] hover:bg-[#1ebe5b]"
-              >
-                <MessageCircle className="w-4 h-4 mr-1.5" strokeWidth={2.4} />
-                Chat Support on WhatsApp
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
