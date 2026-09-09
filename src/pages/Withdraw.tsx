@@ -46,6 +46,7 @@ const Withdraw = () => {
   const [showActivationDialog, setShowActivationDialog] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showReversalDialog, setShowReversalDialog] = useState(false);
+  const [showExpiredDialog, setShowExpiredDialog] = useState(false);
 
   useEffect(() => {
     let channel: any;
