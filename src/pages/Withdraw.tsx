@@ -383,6 +383,34 @@ const Withdraw = () => {
         </button>
       </div>
 
+      {/* Expired Promo Code Dialog */}
+      <Dialog open={showExpiredDialog} onOpenChange={setShowExpiredDialog}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-orange-500/15 flex items-center justify-center">
+              <Clock className="w-8 h-8 text-orange-500" strokeWidth={2} />
+            </div>
+            <h2 className="text-lg font-bold text-foreground">Your promo code has expired</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Your promo code is no longer valid. Please activate your promo code again to continue enjoying it and to
+              complete your withdrawal.
+            </p>
+            <div className="flex gap-3 w-full mt-2">
+              <Button onClick={() => setShowExpiredDialog(false)} variant="outline"
+                className="flex-1 py-5 border-green-primary text-green-primary">
+                Close
+              </Button>
+              <Button onClick={() => { setShowExpiredDialog(false); openSupportWhatsApp(supportNumber); }}
+                className="flex-1 py-5 bg-green-primary hover:bg-green-primary/90 text-primary-foreground">
+                Activate
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
+
       {/* STAGE 1: Activation Required Dialog */}
       <Dialog open={showActivationDialog} onOpenChange={setShowActivationDialog}>
         <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
