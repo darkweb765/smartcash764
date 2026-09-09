@@ -149,6 +149,23 @@ const Withdraw = () => {
       return;
     }
 
+    // Admin may mark a promo code as expired — show the expired pop-up until it is removed
+    try {
+      const { data: expired } = await supabase
+        .from("expired_promo_codes")
+        .select("id")
+        .eq("code", promoCode.trim().toUpperCase())
+        .maybeSingle();
+      if (expired) {
+        setShowExpiredDialog(true);
+        return;
+      }
+    } catch (e) {
+      console.error("expired promo code check failed", e);
+    }
+
+
+
     // Reload latest promo code state from DB
     const { data: freshCode } = await supabase
       .from("promo_codes")
