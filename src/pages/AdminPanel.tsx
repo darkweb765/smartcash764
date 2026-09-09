@@ -373,7 +373,43 @@ const AdminPanel = () => {
     }
   };
 
-  useEffect(() => { if (tab === "settings") { loadSettings(); loadScheduled(); } }, [tab]);
+  useEffect(() => { if (tab === "settings") { loadSettings(); loadScheduled(); loadExpiredCodes(); } }, [tab]);
+
+  // Expired promo codes
+  const [expiredCodes, setExpiredCodes] = useState<{ id: string; code: string; created_at: string }[]>([]);
+  const [expireInput, setExpireInput] = useState("");
+  const [expiring, setExpiring] = useState(false);
+
+  const loadExpiredCodes = async () => {
+    const data = await callAdmin("GET", "list_expired_codes");
+    setExpiredCodes(Array.isArray(data) ? data : []);
+  };
+
+  const expirePromoCode = async () => {
+    const code = expireInput.trim().toUpperCase();
+    if (code.length < 4) {
+      toast({ title: "Enter a valid promo code", variant: "destructive" });
+      return;
+    }
+    setExpiring(true);
+    const res = await callAdmin("POST", "expire_code", { code });
+    setExpiring(false);
+    if (res?.success) {
+      setExpireInput("");
+      toast({ title: "Promo code expired", description: `${code} will now show the expired pop-up on withdrawal.` });
+      loadExpiredCodes();
+    } else {
+      toast({ title: res?.error || "Failed to expire promo code", variant: "destructive" });
+    }
+  };
+
+  const removeExpiredCode = async (id: string) => {
+    const res = await callAdmin("POST", "unexpire_code", { id });
+    if (res?.success) {
+      toast({ title: "Promo code is active again" });
+      loadExpiredCodes();
+    }
+  };
 
   const saveSupportNumber = async () => {
     const digits = supportNumberInput.replace(/[^0-9]/g, "");
