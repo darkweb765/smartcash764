@@ -10,6 +10,7 @@ import { useAppContext } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSupportNumber } from "@/hooks/useSupportNumber";
+import { openSupportWhatsApp } from "@/utils/openWhatsApp";
 
 const nigerianBanks = [
   "Select Bank",
