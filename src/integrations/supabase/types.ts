@@ -184,6 +184,27 @@ export type Database = {
         }
         Relationships: []
       }
+      expired_promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_settings: {
         Row: {
           account_name: string

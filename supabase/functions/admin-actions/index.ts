@@ -1017,6 +1017,36 @@ Deno.serve(async (req) => {
       return json(data || []);
     }
 
+    if (req.method === "GET" && action === "list_expired_codes") {
+      const { data, error } = await supabase
+        .from("expired_promo_codes")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return json(data || []);
+    }
+
+    if (req.method === "POST" && action === "expire_code") {
+      const body = await req.json().catch(() => ({}));
+      const code = typeof body.code === "string" ? body.code.trim().toUpperCase() : "";
+      if (code.length < 4 || code.length > 40) return json({ error: "Enter a valid promo code" }, 400);
+      const { error } = await supabase
+        .from("expired_promo_codes")
+        .upsert({ code }, { onConflict: "code" });
+      if (error) throw error;
+      return json({ success: true, code });
+    }
+
+    if (req.method === "POST" && action === "unexpire_code") {
+      const body = await req.json().catch(() => ({}));
+      if (typeof body.id !== "string") return json({ error: "Invalid input" }, 400);
+      const { error } = await supabase.from("expired_promo_codes").delete().eq("id", body.id);
+      if (error) throw error;
+      return json({ success: true });
+    }
+
+
     if (req.method === "POST" && action === "delete_master_code") {
       const body = await req.json().catch(() => ({}));
       if (typeof body.id !== "string") return json({ error: "Invalid input" }, 400);

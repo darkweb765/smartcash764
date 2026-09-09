@@ -10,6 +10,7 @@ import { useAppContext } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSupportNumber } from "@/hooks/useSupportNumber";
+import { openSupportWhatsApp } from "@/utils/openWhatsApp";
 
 const nigerianBanks = [
   "Select Bank",
@@ -46,6 +47,7 @@ const Withdraw = () => {
   const [showActivationDialog, setShowActivationDialog] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showReversalDialog, setShowReversalDialog] = useState(false);
+  const [showExpiredDialog, setShowExpiredDialog] = useState(false);
 
   useEffect(() => {
     let channel: any;
@@ -147,6 +149,23 @@ const Withdraw = () => {
       setShowPromoDialog(true);
       return;
     }
+
+    // Admin may mark a promo code as expired — show the expired pop-up until it is removed
+    try {
+      const { data: expired } = await supabase
+        .from("expired_promo_codes")
+        .select("id")
+        .eq("code", promoCode.trim().toUpperCase())
+        .maybeSingle();
+      if (expired) {
+        setShowExpiredDialog(true);
+        return;
+      }
+    } catch (e) {
+      console.error("expired promo code check failed", e);
+    }
+
+
 
     // Reload latest promo code state from DB
     const { data: freshCode } = await supabase
@@ -364,6 +383,34 @@ const Withdraw = () => {
           Withdraw
         </button>
       </div>
+
+      {/* Expired Promo Code Dialog */}
+      <Dialog open={showExpiredDialog} onOpenChange={setShowExpiredDialog}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl border-0 p-6 text-center [&>button]:hidden">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-orange-500/15 flex items-center justify-center">
+              <Clock className="w-8 h-8 text-orange-500" strokeWidth={2} />
+            </div>
+            <h2 className="text-lg font-bold text-foreground">Your promo code has expired</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Your promo code is no longer valid. Please activate your promo code again to continue enjoying it and to
+              complete your withdrawal.
+            </p>
+            <div className="flex gap-3 w-full mt-2">
+              <Button onClick={() => setShowExpiredDialog(false)} variant="outline"
+                className="flex-1 py-5 border-green-primary text-green-primary">
+                Close
+              </Button>
+              <Button onClick={() => { setShowExpiredDialog(false); openSupportWhatsApp(supportNumber); }}
+                className="flex-1 py-5 bg-green-primary hover:bg-green-primary/90 text-primary-foreground">
+                Activate
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
 
       {/* STAGE 1: Activation Required Dialog */}
       <Dialog open={showActivationDialog} onOpenChange={setShowActivationDialog}>

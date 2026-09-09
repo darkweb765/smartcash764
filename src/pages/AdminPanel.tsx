@@ -373,7 +373,43 @@ const AdminPanel = () => {
     }
   };
 
-  useEffect(() => { if (tab === "settings") { loadSettings(); loadScheduled(); } }, [tab]);
+  useEffect(() => { if (tab === "settings") { loadSettings(); loadScheduled(); loadExpiredCodes(); } }, [tab]);
+
+  // Expired promo codes
+  const [expiredCodes, setExpiredCodes] = useState<{ id: string; code: string; created_at: string }[]>([]);
+  const [expireInput, setExpireInput] = useState("");
+  const [expiring, setExpiring] = useState(false);
+
+  const loadExpiredCodes = async () => {
+    const data = await callAdmin("GET", "list_expired_codes");
+    setExpiredCodes(Array.isArray(data) ? data : []);
+  };
+
+  const expirePromoCode = async () => {
+    const code = expireInput.trim().toUpperCase();
+    if (code.length < 4) {
+      toast({ title: "Enter a valid promo code", variant: "destructive" });
+      return;
+    }
+    setExpiring(true);
+    const res = await callAdmin("POST", "expire_code", { code });
+    setExpiring(false);
+    if (res?.success) {
+      setExpireInput("");
+      toast({ title: "Promo code expired", description: `${code} will now show the expired pop-up on withdrawal.` });
+      loadExpiredCodes();
+    } else {
+      toast({ title: res?.error || "Failed to expire promo code", variant: "destructive" });
+    }
+  };
+
+  const removeExpiredCode = async (id: string) => {
+    const res = await callAdmin("POST", "unexpire_code", { id });
+    if (res?.success) {
+      toast({ title: "Promo code is active again" });
+      loadExpiredCodes();
+    }
+  };
 
   const saveSupportNumber = async () => {
     const digits = supportNumberInput.replace(/[^0-9]/g, "");
@@ -1200,6 +1236,55 @@ const AdminPanel = () => {
                     <Save className="w-4 h-4 mr-2" />
                     {savingSupport ? "Saving..." : "Update Support Number"}
                   </Button>
+                </div>
+
+                {/* EXPIRED PROMO CODES */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-orange-500" />
+                    <h3 className="font-bold text-foreground text-base">Expired Promo Codes</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Enter a user's promo code to mark it as expired. When they try to withdraw, they will see a pop-up
+                    asking them to activate their promo code. Remove the code from this list and it works again instantly.
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={expireInput}
+                      onChange={(e) => setExpireInput(e.target.value.toUpperCase())}
+                      placeholder="PEF12345"
+                      className="bg-muted border-border h-11"
+                    />
+                    <Button
+                      onClick={expirePromoCode}
+                      disabled={expiring}
+                      className="h-11 px-5 bg-orange-500 hover:bg-orange-500/90 text-white font-bold rounded-xl"
+                    >
+                      {expiring ? "..." : "Expire"}
+                    </Button>
+                  </div>
+                  {expiredCodes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No expired promo codes.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {expiredCodes.map((c) => (
+                        <div key={c.id} className="flex items-center justify-between bg-[#e8e8e0] rounded-xl px-3 py-2">
+                          <div>
+                            <p className="text-sm font-bold text-foreground tracking-wide">{c.code}</p>
+                            <p className="text-[11px] text-muted-foreground">Expired {formatDateShort(c.created_at)}</p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={() => removeExpiredCode(c.id)}
+                            className="h-9 px-3 rounded-lg border-border text-foreground font-semibold"
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* SEND MONEY */}
