@@ -26,7 +26,9 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    const cleanEmail = normalizeEmail(email);
+
+    if (!cleanEmail || !password) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
