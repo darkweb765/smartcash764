@@ -50,7 +50,7 @@ const Register = () => {
     await supabase.auth.signOut();
 
     const { error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
+      email: normalizeEmail(email),
       password,
       options: {
         emailRedirectTo: window.location.origin,
