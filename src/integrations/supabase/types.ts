@@ -517,7 +517,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      backfill_missing_user_records: {
+        Args: never
+        Returns: {
+          app_states_created: number
+          profiles_created: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
