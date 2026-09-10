@@ -71,11 +71,16 @@ const Register = () => {
         variant: "destructive",
       });
     } else {
+      try {
+        await ensureUserRecords(username.trim());
+      } catch (e) {
+        console.error("ensureUserRecords failed", e);
+      }
       toast({
         title: "Success",
         description: "Account created successfully!",
       });
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     }
   };
 
