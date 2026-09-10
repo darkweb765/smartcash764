@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ensureUserRecords, normalizeEmail } from "@/lib/ensureUserRecords";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -25,7 +26,9 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    const cleanEmail = normalizeEmail(email);
+
+    if (!cleanEmail || !password) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -36,26 +39,35 @@ const Login = () => {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
       password,
     });
 
-    setLoading(false);
-
-    if (error) {
+    if (error || !data.session) {
+      setLoading(false);
       toast({
         title: "Login Failed",
-        description: error.message,
+        description: "Invalid email/phone number or password.",
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Success",
-        description: "Login successful!",
-      });
-      navigate("/dashboard");
+      return;
     }
+
+    // Same account on every device: make sure the records tied to this
+    // auth ID exist, without ever creating a second account.
+    try {
+      await ensureUserRecords();
+    } catch (e) {
+      console.error("ensureUserRecords failed", e);
+    }
+
+    setLoading(false);
+    toast({
+      title: "Success",
+      description: "Login successful!",
+    });
+    navigate("/dashboard", { replace: true });
   };
 
   return (
@@ -88,6 +100,11 @@ const Login = () => {
           <Input
             id="email"
             type="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="email"
             placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}

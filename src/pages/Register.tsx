@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ensureUserRecords, normalizeEmail } from "@/lib/ensureUserRecords";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -49,7 +50,7 @@ const Register = () => {
     await supabase.auth.signOut();
 
     const { error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
+      email: normalizeEmail(email),
       password,
       options: {
         emailRedirectTo: window.location.origin,
@@ -70,11 +71,16 @@ const Register = () => {
         variant: "destructive",
       });
     } else {
+      try {
+        await ensureUserRecords(username.trim());
+      } catch (e) {
+        console.error("ensureUserRecords failed", e);
+      }
       toast({
         title: "Success",
         description: "Account created successfully!",
       });
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     }
   };
 
@@ -120,6 +126,11 @@ const Register = () => {
           <Input
             id="email"
             type="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="email"
             placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
