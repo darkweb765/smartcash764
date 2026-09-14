@@ -171,6 +171,18 @@ const Login = () => {
           </span>
         </p>
       </form>
+
+      <LoginHelpDialog
+        open={helpOpen}
+        loading={helpLoading}
+        help={help}
+        suggestion={suggestion}
+        onUseSuggestion={() => {
+          if (suggestion) setEmail(suggestion);
+          setHelpOpen(false);
+        }}
+        onClose={() => setHelpOpen(false)}
+      />
     </div>
   );
 };
