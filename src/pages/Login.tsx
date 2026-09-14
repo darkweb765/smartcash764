@@ -6,7 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ensureUserRecords, normalizeEmail } from "@/lib/ensureUserRecords";
+import { ensureUserRecords } from "@/lib/ensureUserRecords";
+import { normalizeCredential } from "@/lib/identity";
+import LoginHelpDialog, { LoginHelp } from "@/components/LoginHelpDialog";
+
+const ERROR_TEXT = "Invalid email/phone number or password.";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,6 +18,10 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpLoading, setHelpLoading] = useState(false);
+  const [help, setHelp] = useState<LoginHelp | null>(null);
+  const [suggestion, setSuggestion] = useState<string | null>(null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -23,10 +31,30 @@ const Login = () => {
     checkSession();
   }, [navigate]);
 
+  const analyseFailure = async (typed: string, normalized: string, kind: string, changed: boolean) => {
+    setHelp(null);
+    setHelpLoading(true);
+    setHelpOpen(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("login-help", {
+        body: { typed, normalized, kind, changed, errorMessage: ERROR_TEXT },
+      });
+      if (error || !data || (data as { error?: string }).error) {
+        setHelp(null);
+      } else {
+        setHelp(data as LoginHelp);
+      }
+    } catch {
+      setHelp(null);
+    } finally {
+      setHelpLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const cleanEmail = normalizeEmail(email);
+
+    const { value: cleanEmail, kind, changed } = normalizeCredential(email);
 
     if (!cleanEmail || !password) {
       toast({
@@ -39,18 +67,19 @@ const Login = () => {
 
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword(
+      kind === "phone" ? { phone: cleanEmail, password } : { email: cleanEmail, password },
+    );
 
     if (error || !data.session) {
       setLoading(false);
       toast({
         title: "Login Failed",
-        description: "Invalid email/phone number or password.",
+        description: ERROR_TEXT,
         variant: "destructive",
       });
+      setSuggestion(changed && cleanEmail !== email ? cleanEmail : null);
+      analyseFailure(email, cleanEmail, kind, changed);
       return;
     }
 
