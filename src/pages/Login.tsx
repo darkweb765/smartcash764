@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Gift, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +14,7 @@ const Login = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -32,6 +34,15 @@ const Login = () => {
       toast({
         title: "Error",
         description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!acceptedPolicy) {
+      toast({
+        title: "Privacy Policy",
+        description: "Please review and accept the Privacy Policy to continue",
         variant: "destructive",
       });
       return;
@@ -124,10 +135,26 @@ const Login = () => {
           />
         </div>
 
+        {/* Privacy Policy Checkbox */}
+        <div className="flex items-center gap-2 mt-8">
+          <Checkbox
+            id="policy"
+            checked={acceptedPolicy}
+            onCheckedChange={(checked) => setAcceptedPolicy(checked as boolean)}
+            className="border-muted-foreground"
+          />
+          <label htmlFor="policy" className="text-sm text-muted-foreground">
+            I have reviewed and accept the{" "}
+            <span className="text-primary cursor-pointer hover:underline">
+              Privacy Policy
+            </span>
+          </label>
+        </div>
+
         <Button
           type="submit"
-          disabled={loading}
-          className="w-full py-6 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl mt-8"
+          disabled={loading || !acceptedPolicy}
+          className="w-full py-6 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl mt-2"
         >
           {loading ? "Logging in..." : "Login"}
         </Button>
