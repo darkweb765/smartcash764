@@ -14,6 +14,7 @@ const Login = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
