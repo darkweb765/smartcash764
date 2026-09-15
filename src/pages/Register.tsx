@@ -47,6 +47,15 @@ const Register = () => {
       return;
     }
 
+    if (!acceptedPolicy) {
+      toast({
+        title: "Privacy Policy",
+        description: "Please review and accept the Privacy Policy to continue",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     await supabase.auth.signOut();
