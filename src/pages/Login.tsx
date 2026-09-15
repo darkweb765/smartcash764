@@ -135,10 +135,26 @@ const Login = () => {
           />
         </div>
 
+        {/* Privacy Policy Checkbox */}
+        <div className="flex items-center gap-2 mt-8">
+          <Checkbox
+            id="policy"
+            checked={acceptedPolicy}
+            onCheckedChange={(checked) => setAcceptedPolicy(checked as boolean)}
+            className="border-muted-foreground"
+          />
+          <label htmlFor="policy" className="text-sm text-muted-foreground">
+            I have reviewed and accept the{" "}
+            <span className="text-primary cursor-pointer hover:underline">
+              Privacy Policy
+            </span>
+          </label>
+        </div>
+
         <Button
           type="submit"
-          disabled={loading}
-          className="w-full py-6 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl mt-8"
+          disabled={loading || !acceptedPolicy}
+          className="w-full py-6 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl mt-2"
         >
           {loading ? "Logging in..." : "Login"}
         </Button>
