@@ -712,6 +712,10 @@ Deno.serve(async (req) => {
         last_sign_in_at: authUser?.last_sign_in_at || null,
         balance: Number(stateRes.data?.balance || 0),
         gift_claimed: !!stateRes.data?.gift_claimed,
+        claimed_amount: stateRes.data?.gift_claimed ? 150000 : 0,
+        withdrawn_total: (withdrawalsRes.data || [])
+          .filter((w: any) => !["pending", "rejected", "failed", "declined"].includes(String(w.status)))
+          .reduce((s: number, w: any) => s + Number(w.amount || 0), 0),
         wallet_unlocked: !!stateRes.data?.wallet_unlocked,
         purchases: purchasesRes.data || [],
         codes: codesRes.data || [],
@@ -794,6 +798,29 @@ Deno.serve(async (req) => {
       }
 
 
+
+      // ---------- ADMIN: VERIFY A USER DIRECTLY FROM THE USER REPORT ----------
+      if (body.action === "verify_user") {
+        const uid = typeof body.user_id === "string" ? body.user_id : "";
+        if (!uid) return json({ error: "Invalid input" }, 400);
+        const { data: pending } = await supabase
+          .from("promo_purchases").select("id").eq("user_id", uid)
+          .order("created_at", { ascending: false }).limit(1).maybeSingle();
+        let pid = pending?.id as string | undefined;
+        if (!pid) {
+          const { data: au } = await supabase.auth.admin.getUserById(uid);
+          const { data: prof } = await supabase.from("profiles").select("username").eq("user_id", uid).maybeSingle();
+          const uname = prof?.username || "User";
+          const { data: created, error: cErr } = await supabase.from("promo_purchases").insert({
+            user_id: uid, full_name: uname, username: uname,
+            email: au?.user?.email || "unknown@smartpay.app", status: "pending",
+          }).select("id").single();
+          if (cErr) throw cErr;
+          pid = created.id;
+        }
+        body.action = "verify_payment";
+        body.purchase_id = pid;
+      }
 
       if (body.action === "verify_payment") {
         const { purchase_id } = body;
