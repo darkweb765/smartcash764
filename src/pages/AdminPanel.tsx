@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckCircle, Copy, Send, Search, RefreshCw, Shield, Users, Bell, MessageCircle, FileText, X, Wallet, Save, Image as ImageIcon, Settings as SettingsIcon, Phone } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
