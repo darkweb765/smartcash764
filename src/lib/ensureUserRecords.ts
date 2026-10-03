@@ -21,7 +21,11 @@ export const ensureUserRecords = async (fallbackUsername?: string) => {
       fallbackUsername ||
       user.email?.split("@")[0] ||
       "User";
-    await supabase.from("profiles").insert({ user_id: user.id, username });
+    await supabase.from("profiles").insert({
+      user_id: user.id,
+      username,
+      privacy_accepted_at: new Date().toISOString(),
+    });
   }
 
   const { data: state } = await supabase
