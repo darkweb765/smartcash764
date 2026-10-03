@@ -171,7 +171,10 @@ const Register = () => {
           />
           <label htmlFor="policy" className="text-sm text-muted-foreground">
             I have reviewed and accept the{" "}
-            <span className="text-primary cursor-pointer hover:underline">
+            <span
+              onClick={() => navigate("/privacy")}
+              className="text-primary cursor-pointer hover:underline"
+            >
               Privacy Policy
             </span>
           </label>

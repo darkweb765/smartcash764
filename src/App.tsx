@@ -36,6 +36,7 @@ import Security from "./pages/Security";
 import AccountSettings from "./pages/AccountSettings";
 import GiftCard from "./pages/GiftCard";
 import NotFound from "./pages/NotFound";
+import Privacy from "./pages/Privacy";
 import SupportReplyPopup from "./components/SupportReplyPopup";
 import PurchaseSuccessPopup from "./components/PurchaseSuccessPopup";
 import BankAlertPopup from "./components/BankAlertPopup";
@@ -115,6 +116,7 @@ const AppRoutes = () => {
           <Route path="/welcome" element={session ? <Navigate to="/dashboard" replace /> : <Welcome />} />
           <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <Login />} />
           <Route path="/register" element={session ? <Navigate to="/dashboard" replace /> : <Register />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/dashboard" element={session ? <Index /> : <Navigate to="/welcome" replace />} />
           <Route path="/profile" element={session ? <Profile /> : <Navigate to="/welcome" replace />} />
           <Route path="/withdraw" element={session ? <Withdraw /> : <Navigate to="/welcome" replace />} />
