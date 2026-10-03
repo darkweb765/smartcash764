@@ -535,6 +535,21 @@ const AdminPanel = () => {
     else toast({ title: data?.error || "No user found with that email", variant: "destructive" });
   };
 
+  const [reportVerifying, setReportVerifying] = useState(false);
+  const verifyReportUser = async () => {
+    if (!report?.user_id) return;
+    setReportVerifying(true);
+    const res = await callAdmin("POST", "", { action: "verify_user", user_id: report.user_id });
+    setReportVerifying(false);
+    if (res?.code) {
+      toast({ title: "Payment verified", description: `Promo code ${res.code} given to user` });
+      const data = await callAdmin("GET", "user_report", undefined, `&email=${encodeURIComponent(report.email)}`);
+      if (data?.user_id) setReport(data);
+    } else {
+      toast({ title: res?.error || "Could not verify user", variant: "destructive" });
+    }
+  };
+
 
 
   // Account settings state
@@ -1423,24 +1438,50 @@ const AdminPanel = () => {
                         <p className="text-[12px] text-muted-foreground">
                           Registered: {report.registered_at ? formatDateShort(report.registered_at) : "—"}
                         </p>
-                        <p className="text-[12px] text-muted-foreground">
-                          Balance: <span className="font-bold text-green-primary">₦{Number(report.balance).toLocaleString()}</span>
-                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="rounded-xl bg-green-primary p-4">
+                          <p className="text-[11px] text-primary-foreground/80 font-bold uppercase">Available Balance (Dashboard)</p>
+                          <p className="text-2xl font-extrabold text-primary-foreground">₦{Number(report.balance).toLocaleString()}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="rounded-xl border border-border p-3">
+                            <p className="text-[11px] text-muted-foreground font-bold uppercase">Amount Claimed</p>
+                            <p className="text-sm font-bold text-foreground">₦{Number(report.claimed_amount || 0).toLocaleString()}</p>
+                            <p className="text-[11px] text-muted-foreground">{report.gift_claimed ? "Bonus claimed" : "Not claimed yet"}</p>
+                          </div>
+                          <div className="rounded-xl border border-border p-3">
+                            <p className="text-[11px] text-muted-foreground font-bold uppercase">Withdrawn</p>
+                            {Number(report.withdrawn_total) > 0 ? (
+                              <>
+                                <p className="text-sm font-bold text-green-primary">₦{Number(report.withdrawn_total).toLocaleString()}</p>
+                                <p className="text-[11px] text-green-primary font-semibold">Withdrawal successful 🎊</p>
+                              </>
+                            ) : (
+                              <p className="text-sm font-bold text-foreground">No successful withdrawal</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div className="rounded-xl border border-border p-3">
-                          <p className="text-[11px] text-muted-foreground font-bold uppercase">Bought Code</p>
-                          <p className="text-sm font-bold text-foreground">
-                            {report.codes?.length ? "Yes" : report.purchases?.length ? "Attempted (pending)" : "No"}
-                          </p>
-                          {report.codes?.[0] && (
-                            <p className="text-[12px] text-green-primary font-bold tracking-wider">{report.codes[0].code}</p>
-                          )}
-                          {report.codes?.[0] && (
-                            <p className="text-[11px] text-muted-foreground">
-                              {report.codes[0].is_activated ? "Activated" : "Not activated"}
-                            </p>
+                          <p className="text-[11px] text-muted-foreground font-bold uppercase">Promo Code</p>
+                          {report.codes?.[0] ? (
+                            <>
+                              <p className="text-[12px] text-green-primary font-bold tracking-wider">{report.codes[0].code}</p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {report.codes[0].is_activated ? "Activated" : "Not activated"}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-sm font-bold text-destructive">Promo code not purchased</p>
+                              <Button size="sm" onClick={verifyReportUser} disabled={reportVerifying} className="mt-2 w-full bg-green-primary hover:bg-green-primary/90 text-primary-foreground font-bold rounded-lg">
+                                {reportVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify"}
+                              </Button>
+                            </>
                           )}
                         </div>
                         <div className="rounded-xl border border-border p-3">
