@@ -1,4 +1,4 @@
-export const WHATSAPP_CHANNEL_ID = "0029VbAxtp984OmCYlddio40";
+export const WHATSAPP_CHANNEL_ID = "0029Vb6PDHY6hENkLPtlGj30";
 
 export const WHATSAPP_CHANNEL_URL = `https://whatsapp.com/channel/${WHATSAPP_CHANNEL_ID}`;
 
