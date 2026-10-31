@@ -29,7 +29,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     let cancelled = false;
 
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Local session read (no network): works instantly even while the
+      // backend is waking up.
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user ?? null;
       if (!user || cancelled) return;
 
       const saveNotification = async (type: Notification["type"], message: string, amount?: number) => {
