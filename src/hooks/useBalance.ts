@@ -1,5 +1,8 @@
+// ============= Full file contents =============
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { onAppReturn } from "@/lib/backendWarmup";
 
 const TARGET_BALANCE = 150000;
 const cacheKey = (uid: string) => `smartpay_balance_cache_${uid}`;
@@ -33,9 +36,10 @@ export const useBalance = () => {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    // Local read (no network): instant even when the backend is waking up.
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
-      const uid = user?.id ?? null;
+      const uid = session?.user?.id ?? null;
       setUserId(uid);
       if (uid) {
         const cached = readCache(uid);
@@ -104,7 +108,9 @@ export const useBalance = () => {
       writeCache(userId, nextBalance, nextClaimed);
     };
 
-    loadState();
+    // Loads now and re-syncs whenever the user comes back to the app,
+    // so a sleeping backend never leaves stale numbers on screen.
+    const stop = onAppReturn(loadState);
 
     // Live updates: admin credits/debits reflect instantly without refresh
     const channel = supabase
@@ -130,6 +136,7 @@ export const useBalance = () => {
 
     return () => {
       cancelled = true;
+      stop();
       supabase.removeChannel(channel);
     };
   }, [userId]);
