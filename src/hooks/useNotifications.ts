@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { onAppReturn } from "@/lib/backendWarmup";
 
 export interface Notification {
   id: string;
@@ -30,6 +31,25 @@ const mapRow = (row: any): Notification => ({
   meta: (row.meta || undefined) as Record<string, any> | undefined,
 });
 
+const MAX_CACHED = 60;
+const cacheKey = (uid: string) => `smartpay_notifications_cache_${uid}`;
+
+const readCache = (uid: string): Notification[] => {
+  try {
+    const raw = localStorage.getItem(cacheKey(uid));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeCache = (uid: string, list: Notification[]) => {
+  try {
+    localStorage.setItem(cacheKey(uid), JSON.stringify(list.slice(0, MAX_CACHED)));
+  } catch {}
+};
 
 export const useNotifications = () => {
   const [userId, setUserId] = useState<string | null>(null);
@@ -48,12 +68,10 @@ export const useNotifications = () => {
   useEffect(() => {
     mountedRef.current = true;
 
-    supabase.auth
-      .getUser()
-      .then(({ data: { user } }) => {
-        if (mountedRef.current) setUserId(user?.id ?? null);
-      })
-      .catch((err) => console.error("useNotifications getUser failed:", err));
+    // Local read (no network): instant even when the backend is waking up.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (mountedRef.current) setUserId(session?.user?.id ?? null);
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mountedRef.current) return;
@@ -72,27 +90,37 @@ export const useNotifications = () => {
     if (!userId) return;
     let cancelled = false;
 
+    // Show the cached list immediately so the page opens instantly,
+    // then refresh from the database in the background.
+    const cached = readCache(userId);
+    if (cached.length) safeSetNotifications(cached);
+
     const loadNotifications = async () => {
       try {
         const { data, error } = await supabase
           .from("user_notifications")
           .select("id, type, message, amount, read, created_at, meta")
           .eq("user_id", userId)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          .limit(MAX_CACHED);
 
         if (cancelled || !mountedRef.current) return;
         if (error) {
           console.error("Error loading notifications:", error);
-          safeSetNotifications([]);
+          safeSetNotifications((prev) => (prev.length ? prev : []));
           return;
         }
-        safeSetNotifications((data || []).map(mapRow));
+        const next = (data || []).map(mapRow);
+        safeSetNotifications(next);
+        writeCache(userId, next);
       } catch (err) {
         console.error("loadNotifications threw:", err);
       }
     };
 
-    loadNotifications();
+    // Loads now and re-syncs whenever the user comes back to the app,
+    // so a sleeping backend never blocks or leaves stale lists.
+    const stop = onAppReturn(loadNotifications);
 
     const channel = supabase
       .channel("user-notifications-" + userId)
@@ -118,6 +146,7 @@ export const useNotifications = () => {
 
     return () => {
       cancelled = true;
+      stop();
       supabase.removeChannel(channel);
     };
   }, [userId, safeSetNotifications]);
@@ -141,15 +170,21 @@ export const useNotifications = () => {
         }
         if (data && mountedRef.current) {
           const next = mapRow(data);
-          safeSetNotifications((prev) => prev.some((n) => n.id === next.id) ? prev : [next, ...prev]);
+          safeSetNotifications((prev) => {
+            const merged = prev.some((n) => n.id === next.id) ? prev : [next, ...prev];
+            writeCache(userId, merged);
+            return merged;
+          });
         }
       }, (err) => console.error("addNotification rejected:", err));
   }, [userId, safeSetNotifications]);
 
   const markAsRead = useCallback((id: string) => {
-    safeSetNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    safeSetNotifications((prev) => {
+      const next = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
+      if (userId) writeCache(userId, next);
+      return next;
+    });
     if (userId) {
       supabase
         .from("user_notifications")
@@ -164,7 +199,11 @@ export const useNotifications = () => {
   }, [userId, safeSetNotifications]);
 
   const markAllAsRead = useCallback(() => {
-    safeSetNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    safeSetNotifications((prev) => {
+      const next = prev.map((n) => ({ ...n, read: true }));
+      if (userId) writeCache(userId, next);
+      return next;
+    });
     if (userId) {
       supabase
         .from("user_notifications")
