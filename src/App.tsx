@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { warmBackend } from "@/lib/backendWarmup";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -48,6 +49,12 @@ const queryClient = new QueryClient();
 const AppRoutes = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    // Start waking the backend the moment the app opens so the first
+    // data call doesn't hang while it cold-starts.
+    warmBackend();
+  }, []);
 
   useEffect(() => {
     let mounted = true;
