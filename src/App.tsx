@@ -49,6 +49,15 @@ const queryClient = new QueryClient();
 const AppRoutes = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [slowAuth, setSlowAuth] = useState(false);
+
+  // If the backend is asleep, never hang on the splash: after 6 seconds
+  // open the app anyway (Welcome). The moment the session read completes,
+  // signed-in users are redirected to /dashboard automatically by the routes.
+  useEffect(() => {
+    const t = setTimeout(() => setSlowAuth(true), 6000);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     // Start waking the backend the moment the app opens so the first
@@ -107,7 +116,7 @@ const AppRoutes = () => {
   }, []);
 
 
-  if (checkingAuth) {
+  if (checkingAuth && !slowAuth) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
