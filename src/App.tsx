@@ -116,7 +116,7 @@ const AppRoutes = () => {
   }, []);
 
 
-  if (checkingAuth) {
+  if (checkingAuth && !slowAuth) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
